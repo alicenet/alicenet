@@ -9,8 +9,8 @@ import "contracts/libraries/errors/DutchAuctionErrors.sol";
 
 contract DutchAuction is ImmutableFactory, ImmutableValidatorPool {
     uint256 private _startPrice;
-    uint8 private immutable _decay;
-    uint16 private immutable _scaleParameter;
+    uint8 private _decay;
+    uint16 private _scaleParameter;
     uint256 private _auctionId;
     uint256 private _startBlock;
     uint256 private _finalPrice;
@@ -25,18 +25,21 @@ contract DutchAuction is ImmutableFactory, ImmutableValidatorPool {
     event AuctionStopped(uint256 _auctionId);
     event BidPlaced(uint256 _auctionId, address winner, uint256 _winPrice);
 
-    constructor(uint8 decay_, uint16 scaleParameter_) ImmutableFactory(msg.sender) {
-        _decay = decay_;
-        _scaleParameter = scaleParameter_;
-    }
+    constructor() ImmutableFactory(msg.sender) {}
 
     /// @dev Starts auction defining auction's start block, this auction continues to run until a new start
     /// @param startPrice_ the start price of the auction
-    function startAuction(uint256 startPrice_) public onlyFactory {
+    function startAuction(
+        uint256 startPrice_,
+        uint8 decay_,
+        uint16 scaleParameter_
+    ) public onlyFactory {
         if (_auctionActive == true) {
             revert DutchAuctionErrors.ActiveAuctionFound(_auctionId);
         }
         _startPrice = startPrice_;
+        _decay = decay_;
+        _scaleParameter = scaleParameter_;
         uint256 gasPrice;
         assembly ("memory-safe") {
             gasPrice := gasprice()
@@ -55,6 +58,9 @@ contract DutchAuction is ImmutableFactory, ImmutableValidatorPool {
     }
 
     function stopAuction() public onlyFactory {
+        if (_auctionActive != true) {
+            revert DutchAuctionErrors.NoActiveAuctionFound();
+        }
         _auctionActive = false;
         emit AuctionStopped(_auctionId);
     }
