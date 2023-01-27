@@ -403,6 +403,7 @@ func (s *SMT) maybeAddShortcutToKV(keys, values [][]byte, shortcutKey, shortcutV
 				newKeys = append(newKeys, keys[i+1:]...)
 				newVals = append(newVals, values[:i]...)
 				newVals = append(newVals, values[i+1:]...)
+				break
 			}
 			if !higher && bytes.Compare(shortcutKey, key) > 0 {
 				higher = true
