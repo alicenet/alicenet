@@ -272,6 +272,8 @@ func (ps *PeerManager) acceptLoop() {
 			go ps.handleP2P(conn)
 		case types.DiscProtocol:
 			go ps.handleDisc(conn)
+		case types.Bootnode:
+			fallthrough
 		default:
 			err := conn.Close()
 			if err != nil {

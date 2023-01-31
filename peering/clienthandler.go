@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/alicenet/alicenet/interfaces"
 )
@@ -48,15 +49,17 @@ func (rpcch *clientHandler) HandleConnection(p2pconn interfaces.P2PConn) (*grpc.
 			return nil, errors.New("connection is nil")
 		}
 	}
-	conn, err := grpc.Dial(
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	conn, err := grpc.DialContext(ctx,
 		p2pconn.RemoteAddr().String(), // THIS WILL NEVER BE DIALED
-		grpc.WithTimeout(time.Second*5),
 		grpc.WithContextDialer(contextDialer),
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
 		grpc.WithDisableRetry(),
 		grpc.WithDisableHealthCheck(),
 	)
+	defer ctx.Done()
 	if err != nil {
 		if conn != nil {
 			conn.Close()

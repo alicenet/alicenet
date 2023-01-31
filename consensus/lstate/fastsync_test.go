@@ -682,6 +682,7 @@ func TestSnapShotManager_downloadWithRetryStateLeafClosure_Ok2(t *testing.T) {
 }
 
 func initSnapShotManager(t *testing.T, shouldFail bool, leafs []trie.LeafNode) *SnapShotManager {
+	t.Helper()
 	ctx := context.Background()
 
 	rawSsmDb, err := utils.OpenBadger(ctx.Done(), "", true)

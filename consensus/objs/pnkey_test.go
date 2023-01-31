@@ -9,6 +9,7 @@ import (
 )
 
 func pnkEqual(t *testing.T, pnk, pnk2 *PendingNodeKey) {
+	t.Helper()
 	if !bytes.Equal(pnk.Prefix, pnk2.Prefix) {
 		t.Fatal("fail")
 	}

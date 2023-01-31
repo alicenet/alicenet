@@ -62,6 +62,7 @@ func TestDSLinkerGood(t *testing.T) {
 }
 
 func dslEqual(t *testing.T, dsl1, dsl2 *DSLinker) {
+	t.Helper()
 	dspi1 := dsl1.DSPreImage
 	dspi2 := dsl2.DSPreImage
 	dspiEqual(t, dspi1, dspi2)

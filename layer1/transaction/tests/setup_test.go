@@ -30,6 +30,7 @@ func TestMain(m *testing.M) {
 }
 
 func setupEthereum(t *testing.T, n int) *tests.ClientFixture {
+	t.Helper()
 	logger := logging.GetLogger("test").WithField("test", t.Name())
 	fixture := tests.NewClientFixture(HardHat, 0, n, logger, true, true, true)
 	assert.NotNil(t, fixture)

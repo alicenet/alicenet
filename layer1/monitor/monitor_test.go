@@ -73,6 +73,7 @@ func populateMonitor(monitorState *objects.MonitorState, EPOCH uint32) {
 func getMonitor(
 	t *testing.T,
 ) (*monitor, executor.TaskHandler, *mocks.MockClient, *mocks.MockEthereumContracts, accounts.Account) {
+	t.Helper()
 	monDB := mocks.NewTestDB()
 	consDB := mocks.NewTestDB()
 	adminHandler := mocks.NewMockAdminHandler()

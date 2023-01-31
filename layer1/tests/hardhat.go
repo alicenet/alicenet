@@ -261,7 +261,7 @@ func (h *Hardhat) WaitForHardHatNode(ctx context.Context) error {
 			return ctx.Err()
 		case <-time.After(time.Second):
 			body := bytes.NewReader(buff.Bytes())
-			_, err := c.Post(
+			resp, err := c.Post(
 				h.url,
 				"application/json",
 				body,
@@ -269,6 +269,7 @@ func (h *Hardhat) WaitForHardHatNode(ctx context.Context) error {
 			if err != nil {
 				continue
 			}
+			defer resp.Body.Close()
 			logger.Infof("HardHat node started correctly")
 			return nil
 		}
@@ -405,6 +406,7 @@ func SendCommandViaRPC(url, command string, params ...interface{}) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	_, err = io.ReadAll(resp.Body)
 	if err != nil {

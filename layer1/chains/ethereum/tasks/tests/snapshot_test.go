@@ -784,6 +784,7 @@ func GenerateSnapshotData(
 	mpkI []*big.Int,
 	fakeSig bool,
 ) ([]byte, []byte, error) {
+	t.Helper()
 	bclaims := &objs.BClaims{
 		ChainID:    chainID,
 		Height:     height,
@@ -823,6 +824,7 @@ func GenerateBlockSignature(
 	blockHash []byte,
 	mpkI []*big.Int,
 ) ([]byte, error) {
+	t.Helper()
 	sigs := [][]byte{}
 	groupShares := [][]byte{}
 	for idx := 0; idx < n; idx++ {

@@ -10,6 +10,7 @@ import (
 )
 
 func txckEqual(t *testing.T, txck, txck2 *TxCacheKey) {
+	t.Helper()
 	if !bytes.Equal(txck.Prefix, txck2.Prefix) {
 		t.Fatal("fail")
 	}
