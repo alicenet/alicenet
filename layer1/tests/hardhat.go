@@ -341,7 +341,7 @@ func (h *Hardhat) DeployFactoryAndContracts(tmpDir, baseFilesDir string) (string
 	}
 	outerRegex := regexp.MustCompile(`Deployed AliceNetFactory at address: (.*),.*`)
 	matchedOuter := outerRegex.FindAllSubmatch(output, -1)
-	factoryAddress := fmt.Sprintf("%s", matchedOuter[0][1])
+	factoryAddress := string(matchedOuter[0][1])
 	fmt.Printf("Factory address: %v", factoryAddress)
 	if factoryAddress == "" {
 		return "", fmt.Errorf("unable to find factoryAddress")
