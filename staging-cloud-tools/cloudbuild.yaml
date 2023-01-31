@@ -1,0 +1,9 @@
+steps:
+  - name: alice-staging
+    args: ["go", "build", "-o", "alicenet", "./cmd/main.go"]
+    dir: "AliceNetStaging"
+artifacts:
+  objects:
+    location: "gs://alicenet-builds"
+    paths: ["./AliceNetStaging/alicenet"]
+logsBucket: "gs://alicenet-builds"

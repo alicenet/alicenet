@@ -1,0 +1,5 @@
+hosts: "{{ targets}}"
+tasks:
+  - name: Restart alicenet service
+    shell: sudo systemctl restart alicenet
+    become: yes

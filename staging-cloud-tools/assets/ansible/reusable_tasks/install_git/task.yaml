@@ -1,0 +1,6 @@
+- block:
+    - name: Install git if missing
+      shell: |
+        sudo apt update &&
+        command -v git > /dev/null || sudo apt install git -y
+      become: yes

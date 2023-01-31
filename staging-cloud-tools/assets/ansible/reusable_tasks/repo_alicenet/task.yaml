@@ -1,0 +1,15 @@
+- block:
+    - name: Copy deploy key
+      copy:
+        src: ../../files/deploy_keys/alicenet
+        dest: "home/{{ user }}/deploy_keys/"
+        owner: "{{ user }}"
+        group: "{{ user }}"
+        mode: "0600"
+    - name: Git clone alicenet
+      shell:
+        cmd: cd /home/{{ user }} && GIT_SSH_COMMAND='ssh -o "StrictHostKeyChecking no" -i /home/{{ user }}/deploy_keys/alicenet' git clone git@github.com:alicenet/alicenet.git
+    - name: Change alicenet branch
+      shell:
+        cmd: cd /home/{{ user }}/alicenet && git checkout {{ branch }}
+  become: yes

@@ -1,0 +1,11 @@
+[Unit]
+Description=MadNet Validator
+[Service]
+Type=simple
+ExecStart=/home/alicenet/alicenet --config /home/alicenet/config.toml validator
+Restart=on-failure
+RestartSec=5s
+User=madnet
+Group=madnet
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,5 @@
+hosts: "{{ targets }}"
+tasks:
+  - name: Create alicenet user
+    command: sudo useradd --disable-password --gecos "" alicenet
+    become: yes

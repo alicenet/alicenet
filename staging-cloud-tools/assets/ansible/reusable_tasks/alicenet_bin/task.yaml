@@ -1,0 +1,7 @@
+- block:
+    - name: get alicenet binary
+      shell: |
+        gsutil cp gs://chain-{{ chaind_id }}-alicent-builds/alicenet /home/{{ user}} &&
+        chown {{ user }} : {{ user }} /home/{{ user}}/alicenet
+        chmod +x /home/{{ user}}/alicenet
+      become: yes

@@ -1,0 +1,9 @@
+[unit]
+Description=AliceNet Bootnode
+[Service]
+Restart=on-failure
+RestartSec=5s
+User=alicenet
+Group=alicenet
+[Install]
+WantedBy=multi-user.target
