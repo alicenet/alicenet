@@ -38,9 +38,9 @@ func ProcessLeaves(leaves [][]byte) []byte {
 	n := len(leaves)
 	tree := make([][]byte, 2*n-1)
 	for k := 0; k < n; k++ {
-		tree[2*n-1-k] = utils.CopySlice(leaves[k])
+		tree[2*n-2-k] = utils.CopySlice(leaves[k])
 	}
-	for k := n - 1; k >= 0; k-- {
+	for k := n - 2; k >= 0; k-- {
 		tree[k] = HashPair(tree[2*k+1], tree[2*k+2])
 	}
 	return utils.CopySlice(tree[0])
