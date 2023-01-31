@@ -22,9 +22,11 @@ var _ interfaces.Transaction = (*Tx)(nil)
 
 // Tx is a transaction object.
 type Tx struct {
+	Type uint32
+	Data []byte
+	Fee  *uint256.Uint256
 	Vin  Vin
 	Vout Vout
-	Fee  *uint256.Uint256
 	// not part of serialized object below this line
 	txHash []byte
 }
@@ -354,6 +356,20 @@ func (b *Tx) TxHash() ([]byte, error) {
 	}
 	b.txHash = rootHash
 	return utils.CopySlice(b.txHash), nil
+}
+
+func (b *Tx) computeTxHash() ([]byte, error) {
+	if b.Type == 0 {
+		if len(b.Data) != 0 {
+			return nil, errorz.ErrInvalid{}.New("tx.computeTxHash: Type 0; invalid data")
+		}
+		bytes0 := utils.MarshalUint32(uint32(0))
+		bytes1 := utils.MarshalUint32(uint32(1))
+		bytes2 := utils.MarshalUint32(uint32(2))
+		typeBytes := utils.MarshalUint32(b.Type)
+	} else {
+		return nil, errorz.ErrInvalid{}.New("tx.computeTxHash: invalid type")
+	}
 }
 
 // SetTxHash calculates the TxHash and sets it on all UTXOs and TXIns.
