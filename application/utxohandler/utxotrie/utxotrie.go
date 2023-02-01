@@ -71,6 +71,7 @@ func (ut *UTXOTrie) Init(_ uint32) error {
 	return nil
 }
 
+// GetCanonicalTrie returns the Canonical State Trie
 func (ut *UTXOTrie) GetCanonicalTrie(txn *badger.Txn) (*trie.SMT, error) {
 	root, err := GetCanonicalStateRoot(txn)
 	if err != nil {
@@ -86,6 +87,7 @@ func (ut *UTXOTrie) GetCanonicalTrie(txn *badger.Txn) (*trie.SMT, error) {
 	return t, nil
 }
 
+// GetPendingTrie returns the Pending State Trie
 func (ut *UTXOTrie) GetPendingTrie(txn *badger.Txn) (*trie.SMT, error) {
 	root, err := GetPendingStateRoot(txn)
 	if err != nil {
@@ -101,6 +103,7 @@ func (ut *UTXOTrie) GetPendingTrie(txn *badger.Txn) (*trie.SMT, error) {
 	return t, nil
 }
 
+// GetCurrentTrie returns the Current State Trie
 func (ut *UTXOTrie) GetCurrentTrie(txn *badger.Txn) (*trie.SMT, error) {
 	root, err := GetCurrentStateRoot(txn)
 	if err != nil {
@@ -116,6 +119,8 @@ func (ut *UTXOTrie) GetCurrentTrie(txn *badger.Txn) (*trie.SMT, error) {
 	return t, nil
 }
 
+// Get returns the value of the utxoID (utxo prehash);
+// also returns any utxoIDs not in trie.
 func (ut *UTXOTrie) Get(txn *badger.Txn, utxoIDs [][]byte) ([][]byte, [][]byte, error) {
 	utxoHashes := [][]byte{}
 	missing := [][]byte{}
@@ -142,6 +147,10 @@ func (ut *UTXOTrie) Get(txn *badger.Txn, utxoIDs [][]byte) ([][]byte, [][]byte, 
 	return utxoHashes, missing, nil
 }
 
+// Contains returns utxoIDs missing from state trie;
+// that is, a list of utxoIDs are given as input,
+// and if a utxoID is missing from the state trie,
+// then that utxoID is returned.
 func (ut *UTXOTrie) Contains(txn *badger.Txn, utxoIDs [][]byte) ([][]byte, error) {
 	current, err := ut.GetCurrentTrie(txn)
 	if err != nil {
@@ -165,6 +174,8 @@ func (ut *UTXOTrie) Contains(txn *badger.Txn, utxoIDs [][]byte) ([][]byte, error
 	return missing, nil
 }
 
+// ApplyState updates the Current State Trie to include the additional transactions
+// and then updates the roots.
 func (ut *UTXOTrie) ApplyState(txn *badger.Txn, txs objs.TxVec, height uint32) ([]byte, error) {
 	current, fn, err := ut.session(txn)
 	if err != nil {
@@ -197,6 +208,8 @@ func (ut *UTXOTrie) ApplyState(txn *badger.Txn, txs objs.TxVec, height uint32) (
 	return stateRoot, nil
 }
 
+// updateRoots sets the Current State Root, Pending State Root,
+// and Canonical State Root.
 func (ut *UTXOTrie) updateRoots(txn *badger.Txn, height uint32, stateRoot []byte, current *trie.SMT) error {
 	if err := setRootForHeight(txn, height, stateRoot); err != nil {
 		utils.DebugTrace(ut.logger, err)

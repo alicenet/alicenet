@@ -11,7 +11,7 @@ import (
 	"github.com/alicenet/alicenet/utils"
 )
 
-// NewDataIndex creates a new dataIndex object.
+// NewDataIndex creates a new DataIndex object.
 func NewDataIndex(p, pp prefixFunc) *DataIndex {
 	return &DataIndex{p, pp}
 }
@@ -59,7 +59,7 @@ func (dirk *DataIndexRefKey) UnmarshalBinary(data []byte) {
 	dirk.refkey = utils.CopySlice(data)
 }
 
-// Add adds an item to the index.
+// Add adds a datastore to the index.
 func (di *DataIndex) Add(txn *badger.Txn, utxoID []byte, owner *objs.Owner, dataIndex []byte) error {
 	return di.addInternal(txn, utxoID, owner, dataIndex, false)
 }
@@ -70,6 +70,7 @@ func (di *DataIndex) AddFastSync(txn *badger.Txn, utxoID []byte, owner *objs.Own
 	return di.addInternal(txn, utxoID, owner, dataIndex, true)
 }
 
+// addInternal adds a datastore utxoID of the owner at the specified index
 func (di *DataIndex) addInternal(txn *badger.Txn, utxoID []byte, owner *objs.Owner, dataIndex []byte, allowOverwrites bool) error {
 	utxoIDCopy := utils.CopySlice(utxoID)
 	dataIndexCopy := utils.CopySlice(dataIndex)
@@ -84,6 +85,7 @@ func (di *DataIndex) addInternal(txn *badger.Txn, utxoID []byte, owner *objs.Own
 	return di.addInternalNoOverwrite(txn, key, utxoIDCopy)
 }
 
+// addInternalNoOverwrite ensures that datastore values are not overwritten
 func (di *DataIndex) addInternalNoOverwrite(txn *badger.Txn, dik, utxoID []byte) error {
 	_, err := utils.GetValue(txn, dik)
 	if err == nil {
@@ -101,6 +103,7 @@ func (di *DataIndex) addInternalNoOverwrite(txn *badger.Txn, dik, utxoID []byte)
 	return err
 }
 
+// addInternalOverwrite allows datastore values to be overwritten
 func (di *DataIndex) addInternalOverwrite(txn *badger.Txn, dik, utxoID []byte) error {
 	oldUtxoID, err := utils.GetValue(txn, dik)
 	if err != nil {
@@ -159,7 +162,7 @@ func (di *DataIndex) Drop(txn *badger.Txn, utxoID []byte) error {
 	return utils.DeleteValue(txn, totalDataIndex)
 }
 
-// GetUTXOID returns the UTXOID of a datastore based on owner and index.
+// GetUTXOID returns the utxoID of a datastore based on owner and index.
 func (di *DataIndex) GetUTXOID(txn *badger.Txn, owner *objs.Owner, dataIndex []byte) ([]byte, error) {
 	dataIndexCopy := utils.CopySlice(dataIndex)
 	diKey, err := di.makeKey(owner, dataIndexCopy)

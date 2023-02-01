@@ -6,7 +6,7 @@ import (
 	"github.com/alicenet/alicenet/utils"
 )
 
-// Owner contains information related to a general owner object.
+// Owner contains information related to a generic owner object.
 type Owner struct {
 	CurveSpec constants.CurveSpec
 	Account   []byte
