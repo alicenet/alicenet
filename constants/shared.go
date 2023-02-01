@@ -92,7 +92,7 @@ const (
 // Badger VLog GC ratio.
 const (
 	BadgerDiscardRatio = 0.5
-	MonDBGCFreq        = time.Duration(600)
+	MonDBGCFreq        = time.Second * 600
 )
 
 // TODO Find a way to store this list that feels right.
