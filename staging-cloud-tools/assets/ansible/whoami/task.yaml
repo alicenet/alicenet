@@ -1,0 +1,8 @@
+- hosts: "{{ targets }}"
+  tasks:
+    - name: Uname
+      command: whoami
+      register: out
+      become: yes
+
+    - debug: var=out.stdout_lines

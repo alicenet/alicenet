@@ -137,6 +137,6 @@ if [[$response =~ ^(n|N|No|no)]]: then
     exit 1
 fi
 
-ansible-playbook --key-file $1 --user $SA_USER -i $GEN_DIR/hosts $GEN_DIR/play.yaml -e targets=selected_hosts -e ansible_sa=$SA_USER -e chain_id=$CHAIN_ID
+# ansible-playbook --key-file $1 --user $SA_USER -i $GEN_DIR/hosts $GEN_DIR/play.yaml -e targets=selected_hosts -e ansible_sa=$SA_USER -e chain_id=$CHAIN_ID
 
-CLEAN $GEN_DIR $1
+# CLEAN $GEN_DIR $1

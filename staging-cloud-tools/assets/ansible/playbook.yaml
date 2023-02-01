@@ -1,0 +1,16 @@
+---
+- name: create testnet
+  host: localhost
+  vars_files:
+    - cloud-config.yaml
+  tasks:
+    - import_playbook: create_testnet_vm/task.yaml
+    - name: create alice user
+      msg: ""
+      command: sudo adduser --disabled-password --gecos "" alice
+      become: true
+    - debug:
+    - import_tasks: reuseable_tasks/install_nodejs/task.yaml
+    - import_tasks: reusable_tasks/install_git/task.yaml
+    - import_tasks: reusable_tasks/repo_alicenet/task.yaml
+    - import_tasks: reusable_tasks/alicenet_install/task.yaml
