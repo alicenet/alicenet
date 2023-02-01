@@ -51,7 +51,7 @@ describe("Ethdkg: Migrate state", () => {
       await loadFixture(deployFixture));
   });
 
-  it("Should not be to do a migration of validators if not factory", async function () {
+  it("Should not be to do a migration of validators if not factory [ @skip-on-coverage ]", async function () {
     await expect(
       fixture.ethdkg.migrateValidators(
         validatorsAddress,
@@ -68,7 +68,7 @@ describe("Ethdkg: Migrate state", () => {
       .withArgs(admin.address, fixture.factory.address);
   });
 
-  it("Should not be to do a migration with mismatch state length", async function () {
+  it("Should not be to do a migration with mismatch state length [ @skip-on-coverage ]", async function () {
     const validatorIndexes = [1, 2, 3];
     await expect(
       factoryCallAny(fixture.factory, fixture.ethdkg, "migrateValidators", [
@@ -128,7 +128,7 @@ describe("Ethdkg: Migrate state", () => {
       .withArgs(3, correctValidatorIndexes.length, validatorsShares.length);
   });
 
-  it("Factory should be able to migrate validators", async function () {
+  it("Factory should be able to migrate validators [ @skip-on-coverage ]", async function () {
     const expectedHash = ethers.utils.solidityKeccak256(
       ["uint256", "uint256", "uint256", "uint256"],
       [...validatorsSnapshots[0].mpk]
@@ -160,7 +160,7 @@ describe("Ethdkg: Migrate state", () => {
     ).to.be.equal(true);
   });
 
-  it("Should not be able to run ethdkg after migration without scheduling maintenance", async function () {
+  it("Should not be able to run ethdkg after migration without scheduling maintenance [ @skip-on-coverage ]", async function () {
     const validators = await createValidators(fixture, validatorsSnapshots);
     const stakingTokenIds = await stakeValidators(fixture, validators);
     await factoryCallAnyFixture(
@@ -196,7 +196,7 @@ describe("Ethdkg: Migrate state", () => {
     ).to.be.revertedWithCustomError(fixture.validatorPool, "ConsensusRunning");
   });
 
-  it("Should not be able to run more than 1 migration", async function () {
+  it("Should not be able to run more than 1 migration [ @skip-on-coverage ]", async function () {
     const validators = await createValidators(fixture, validatorsSnapshots);
     const stakingTokenIds = await stakeValidators(fixture, validators);
     await factoryCallAnyFixture(
@@ -246,7 +246,7 @@ describe("Ethdkg: Migrate state", () => {
       .withArgs(1);
   });
 
-  it("Change validators after migration with scheduling maintenance + snapshots", async function () {
+  it("Change validators after migration with scheduling maintenance + snapshots [ @skip-on-coverage ]", async function () {
     const validators = await createValidators(fixture, validatorsSnapshots2);
     const stakingTokenIds = await stakeValidators(fixture, validators);
     validatorsAddress = [];
@@ -414,7 +414,7 @@ describe("Ethdkg: Migrate state", () => {
       );
   });
 
-  it("Run ethdkg with same validators after migration with scheduling maintenance + snapshots", async function () {
+  it("Run ethdkg with same validators after migration with scheduling maintenance + snapshots [ @skip-on-coverage ]", async function () {
     const validators = await createValidators(fixture, validatorsSnapshots);
     const stakingTokenIds = await stakeValidators(fixture, validators);
     await factoryCallAnyFixture(

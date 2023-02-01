@@ -15,7 +15,7 @@ import {
 } from "../../setup";
 
 describe("ETHDKG: Accuse participant of not submitting key shares", () => {
-  it("allows accusation of all missing validators after Key share phase", async function () {
+  it("allows accusation of all missing validators after Key share phase [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
@@ -63,7 +63,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
       ]);
   });
 
-  it("allows accusation of some missing validators after Key share phase", async function () {
+  it("allows accusation of some missing validators after Key share phase [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
@@ -114,7 +114,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
       ]);
   });
 
-  it("do not allow validators to proceed to the next phase if not all validators submitted their key shares", async function () {
+  it("do not allow validators to proceed to the next phase if not all validators submitted their key shares [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
@@ -152,7 +152,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
       ]);
   });
 
-  it("won't let not-distributed shares accusations to take place while ETHDKG Distribute Share Phase is open", async function () {
+  it("won't let not-distributed shares accusations to take place while ETHDKG Distribute Share Phase is open [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
@@ -190,7 +190,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
       ]);
   });
 
-  it("should not allow validators who did not submit key shares in time to submit on the accusation phase", async function () {
+  it("should not allow validators who did not submit key shares in time to submit on the accusation phase [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
@@ -259,7 +259,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
       ]);
   });
 
-  it("should not allow accusation of not submitting key shares of validators submitted their key shares", async function () {
+  it("should not allow accusation of not submitting key shares of validators submitted their key shares [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
@@ -293,7 +293,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
     await expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
 
-  it("should not allow accusation of not submitting key shares for non-validators", async function () {
+  it("should not allow accusation of not submitting key shares for non-validators [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
@@ -326,7 +326,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
     await expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
 
-  it("should not allow not submitted key shares accusations after accusation window has finished", async function () {
+  it("should not allow not submitted key shares accusations after accusation window has finished [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
@@ -372,7 +372,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
     await expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
 
-  it("should not allow accusing a user that submitted the key shares in the middle of the ones that did not", async function () {
+  it("should not allow accusing a user that submitted the key shares in the middle of the ones that did not [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );
@@ -408,7 +408,7 @@ describe("ETHDKG: Accuse participant of not submitting key shares", () => {
     await expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
 
-  it("should not allow double accusation of a user that did not submit his key shares", async function () {
+  it("should not allow double accusation of a user that did not submit his key shares [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
       validators4
     );

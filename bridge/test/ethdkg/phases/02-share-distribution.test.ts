@@ -19,7 +19,7 @@ function deployFixture() {
 }
 
 describe("ETHDKG: Distribute Shares", () => {
-  it("does not let distribute shares before Distribute Share Phase is open", async function () {
+  it("does not let distribute shares before Distribute Share Phase is open [ @skip-on-coverage ]", async function () {
     const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const expectedNonce = 1;
@@ -68,7 +68,7 @@ describe("ETHDKG: Distribute Shares", () => {
       return startAtDistributeShares(validators4);
     }
 
-    it("does not let non-validators to distribute shares", async function () {
+    it("does not let non-validators to distribute shares [ @skip-on-coverage ]", async function () {
       const [ethdkg, ,] = await loadFixture(deploySharesFixture);
       const validatorAddress = "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac";
       // try to distribute shares with a non validator address
@@ -84,7 +84,7 @@ describe("ETHDKG: Distribute Shares", () => {
         .withArgs(validatorAddress);
     });
 
-    it("does not let validator to distribute shares more than once", async function () {
+    it("does not let validator to distribute shares more than once [ @skip-on-coverage ]", async function () {
       const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
         deploySharesFixture
       );
@@ -115,7 +115,7 @@ describe("ETHDKG: Distribute Shares", () => {
         .withArgs(ethers.utils.getAddress(validators4[0].address));
     });
 
-    it("does not let validator send empty commitments or encrypted shares", async function () {
+    it("does not let validator send empty commitments or encrypted shares [ @skip-on-coverage ]", async function () {
       const [ethdkg, , expectedNonce] = await loadFixture(deploySharesFixture);
 
       const ethDKGPhases = await ethers.getContractAt(

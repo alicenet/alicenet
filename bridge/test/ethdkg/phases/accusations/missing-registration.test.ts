@@ -24,7 +24,7 @@ function deployFixture() {
 }
 
 describe("ETHDKG: Missing registration Accusation", () => {
-  it("allows accusation of all missing validators after ETHDKG registration", async function () {
+  it("allows accusation of all missing validators after ETHDKG registration [ @skip-on-coverage ]", async function () {
     const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const expectedNonce = 1;
@@ -64,7 +64,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
   });
 
-  it("allows accusation of some missing validators after ETHDKG registration", async function () {
+  it("allows accusation of some missing validators after ETHDKG registration [ @skip-on-coverage ]", async function () {
     const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const expectedNonce = 1;
@@ -103,7 +103,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
 
   // MISSING REGISTRATION ACCUSATION TESTS
 
-  it("won't let non-registration accusations to take place while ETHDKG registration is open", async function () {
+  it("won't let non-registration accusations to take place while ETHDKG registration is open [ @skip-on-coverage ]", async function () {
     const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const ETHDKGAccusations = await ethers.getContractAt(
@@ -150,7 +150,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
   });
 
-  it("should not allow validators to proceed to next phase if 2 out of 4 did not register and the phase has finished", async function () {
+  it("should not allow validators to proceed to next phase if 2 out of 4 did not register and the phase has finished [ @skip-on-coverage ]", async function () {
     const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const expectedNonce = 1;
@@ -200,7 +200,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
       ]);
   });
 
-  it("should not allow validators who did not register in time to register on the accusation phase", async function () {
+  it("should not allow validators who did not register in time to register on the accusation phase [ @skip-on-coverage ]", async function () {
     const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const expectedNonce = 1;
@@ -247,7 +247,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
       ]);
   });
 
-  it("should not allow validators who did not register in time to distribute shares", async function () {
+  it("should not allow validators who did not register in time to distribute shares [ @skip-on-coverage ]", async function () {
     const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const expectedNonce = 1;
@@ -298,7 +298,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
       ]);
   });
 
-  it("should not allow accusation of validators that registered in ETHDKG", async function () {
+  it("should not allow accusation of validators that registered in ETHDKG [ @skip-on-coverage ]", async function () {
     const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const ETHDKGAccusations = await ethers.getContractAt(
@@ -338,7 +338,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
 
-  it("should not allow accusation of non-existent validators in ETHDKG", async function () {
+  it("should not allow accusation of non-existent validators in ETHDKG [ @skip-on-coverage ]", async function () {
     const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const ETHDKGAccusations = await ethers.getContractAt(
@@ -374,7 +374,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
 
-  it("should not allow accusations after the accusation window", async function () {
+  it("should not allow accusations after the accusation window [ @skip-on-coverage ]", async function () {
     const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const ETHDKGAccusations = await ethers.getContractAt(
@@ -428,7 +428,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
 
-  it("should not allow accusations of non-existent validators along with existent", async function () {
+  it("should not allow accusations of non-existent validators along with existent [ @skip-on-coverage ]", async function () {
     const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const ETHDKGAccusations = await ethers.getContractAt(
@@ -470,7 +470,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
 
-  it("should not move to ShareDistribution phase when only 2 out of 4 validators have participated", async function () {
+  it("should not move to ShareDistribution phase when only 2 out of 4 validators have participated [ @skip-on-coverage ]", async function () {
     // Accuse 1 participant that didn't participate and wait the window to expire and try to go to the next phase after accusation
 
     const { ethdkg, validatorPool } = await loadFixture(deployFixture);
@@ -531,7 +531,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
   });
 
-  it("should move to ShareDistribution phase when all non-participant validators have been accused and #validators >= _minValidators", async function () {
+  it("should move to ShareDistribution phase when all non-participant validators have been accused and #validators >= _minValidators [ @skip-on-coverage ]", async function () {
     const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const expectedNonce = 1;
@@ -599,7 +599,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
   });
 
-  it("should not allow double accusation for missing registration", async function () {
+  it("should not allow double accusation for missing registration [ @skip-on-coverage ]", async function () {
     const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const ETHDKGAccusations = await ethers.getContractAt(

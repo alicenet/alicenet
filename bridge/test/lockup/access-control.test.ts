@@ -31,7 +31,7 @@ describe("Testing Lockup Access Control", async () => {
       await loadFixture(deployFixture));
   });
 
-  it("BonusPool should not receive ETH from address different that PublicStaking or RewardPool contracts", async () => {
+  it("BonusPool should not receive ETH from address different that PublicStaking or RewardPool contracts [ @skip-on-coverage ]", async () => {
     await expect(
       accounts[0].sendTransaction({
         to: fixture.lockup.address,
@@ -43,14 +43,14 @@ describe("Testing Lockup Access Control", async () => {
     );
   });
 
-  it("should receive ETH from PublicStaking contract", async () => {
+  it("should receive ETH from PublicStaking contract [ @skip-on-coverage ]", async () => {
     await asPublicStaking.sendTransaction({
       to: fixture.lockup.address,
       value: 1,
     });
   });
 
-  it("should receive ETH from RewardPool contract", async () => {
+  it("should receive ETH from RewardPool contract [ @skip-on-coverage ]", async () => {
     await asRewardPool.sendTransaction({
       to: fixture.lockup.address,
       value: 1,
@@ -58,7 +58,7 @@ describe("Testing Lockup Access Control", async () => {
   });
 
   describe("Testing onlyPreLock functions", async () => {
-    it("attempts to use onERC721Received", async () => {
+    it("attempts to use onERC721Received [ @skip-on-coverage ]", async () => {
       expect(await fixture.lockup.getState()).to.be.equals(
         LockupStates.PreLock
       );
@@ -104,7 +104,7 @@ describe("Testing Lockup Access Control", async () => {
       ).to.be.revertedWithCustomError(fixture.lockup, "PreLockStateRequired");
     });
 
-    it("attempts to use lockFromTransfer", async () => {
+    it("attempts to use lockFromTransfer [ @skip-on-coverage ]", async () => {
       expect(await fixture.lockup.getState()).to.be.equals(
         LockupStates.PreLock
       );
@@ -121,7 +121,7 @@ describe("Testing Lockup Access Control", async () => {
       ).to.be.revertedWithCustomError(fixture.lockup, "PreLockStateRequired");
     });
 
-    it("attempts to use lockFromApproval", async () => {
+    it("attempts to use lockFromApproval [ @skip-on-coverage ]", async () => {
       // minted a position with tokenID1
       await fixture.publicStaking.mint(1000);
       const tokenID = 1;
@@ -141,7 +141,7 @@ describe("Testing Lockup Access Control", async () => {
   });
 
   describe("Testing excludePostLock functions", async () => {
-    it("attempts to use collectAllProfits", async () => {
+    it("attempts to use collectAllProfits [ @skip-on-coverage ]", async () => {
       await jumpToPostLockState(fixture);
       await expect(
         fixture.lockup.collectAllProfits()
@@ -150,7 +150,7 @@ describe("Testing Lockup Access Control", async () => {
         "PostLockStateNotAllowed"
       );
     });
-    it("attempts to unlock early", async () => {
+    it("attempts to unlock early [ @skip-on-coverage ]", async () => {
       await jumpToPostLockState(fixture);
       await expect(
         fixture.lockup.unlockEarly(1000, false)
@@ -162,7 +162,7 @@ describe("Testing Lockup Access Control", async () => {
   });
 
   describe("Testing onlyPostLock functions", async () => {
-    it("attempts to use aggregateProfits", async () => {
+    it("attempts to use aggregateProfits [ @skip-on-coverage ]", async () => {
       await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
       expect(await fixture.lockup.getState()).to.be.equals(
         LockupStates.PreLock
@@ -181,7 +181,7 @@ describe("Testing Lockup Access Control", async () => {
       ).to.be.revertedWithCustomError(fixture.lockup, "PayoutSafe");
     });
 
-    it("attempts to use unlock", async () => {
+    it("attempts to use unlock [ @skip-on-coverage ]", async () => {
       expect(await fixture.lockup.getState()).to.be.equals(
         LockupStates.PreLock
       );
@@ -200,7 +200,7 @@ describe("Testing Lockup Access Control", async () => {
   });
 
   describe("Testing onlyPayoutSafe functions", async () => {
-    it("attempts to use unlock", async () => {
+    it("attempts to use unlock [ @skip-on-coverage ]", async () => {
       await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
       await jumpToPostLockState(fixture);
       await expect(
@@ -214,7 +214,7 @@ describe("Testing Lockup Access Control", async () => {
   });
 
   describe("Testing onlyPayoutUnSafe functions", async () => {
-    it("attempts to use aggregateProfits", async () => {
+    it("attempts to use aggregateProfits [ @skip-on-coverage ]", async () => {
       await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
       await jumpToPostLockState(fixture);
       await fixture.lockup.aggregateProfits();

@@ -26,13 +26,13 @@ describe("Lockup - public accessors", async () => {
     ({ fixture, accounts, stakedTokenIDs } = await loadFixture(deployFixture));
   });
 
-  it("getLockupStartBlock returns correct locking enrollment start block", async () => {
+  it("getLockupStartBlock returns correct locking enrollment start block [ @skip-on-coverage ]", async () => {
     expect(await fixture.lockup.getLockupStartBlock()).to.be.equal(
       fixture.lockupStartBlock
     );
   });
 
-  it("getLockupEndBlock returns correct locking enrollment end block", async () => {
+  it("getLockupEndBlock returns correct locking enrollment end block [ @skip-on-coverage ]", async () => {
     const expectedLockupEndBlock = fixture.lockupStartBlock + lockDuration;
 
     expect(await fixture.lockup.getLockupEndBlock()).to.be.equal(
@@ -40,25 +40,25 @@ describe("Lockup - public accessors", async () => {
     );
   });
 
-  it("getRewardPoolAddress returns correct reward pool address", async () => {
+  it("getRewardPoolAddress returns correct reward pool address [ @skip-on-coverage ]", async () => {
     expect(await fixture.lockup.getRewardPoolAddress()).to.be.equal(
       fixture.rewardPool.address
     );
   });
 
-  it("getBonusPoolAddress returns correct reward pool address", async () => {
+  it("getBonusPoolAddress returns correct reward pool address [ @skip-on-coverage ]", async () => {
     expect(await fixture.lockup.getBonusPoolAddress()).to.be.equal(
       fixture.bonusPool.address
     );
   });
 
-  it("SCALING_FACTOR returns expected scaling factor", async () => {
+  it("SCALING_FACTOR returns expected scaling factor [ @skip-on-coverage ]", async () => {
     expect(await fixture.lockup.SCALING_FACTOR()).to.be.equal(
       BigNumber.from("1000000000000000000")
     );
   });
 
-  it("FRACTION_RESERVED returns expected scaling factor", async () => {
+  it("FRACTION_RESERVED returns expected scaling factor [ @skip-on-coverage ]", async () => {
     const scalingFactor = await fixture.lockup.SCALING_FACTOR();
     const expectedFractionReserved = scalingFactor.div(5);
     expect(await fixture.lockup.FRACTION_RESERVED()).to.be.equal(
@@ -66,7 +66,7 @@ describe("Lockup - public accessors", async () => {
     );
   });
 
-  it("getReservedPercentage returns correct amount of shares", async () => {
+  it("getReservedPercentage returns correct amount of shares [ @skip-on-coverage ]", async () => {
     const scalingFactor = await fixture.lockup.SCALING_FACTOR();
     const fractionReserved = await fixture.lockup.FRACTION_RESERVED();
     const expectedReservedPercentage = BigNumber.from(100)
@@ -77,7 +77,7 @@ describe("Lockup - public accessors", async () => {
     );
   });
 
-  it("getReservedAmount returns correct amount based on amount passed", async () => {
+  it("getReservedAmount returns correct amount based on amount passed [ @skip-on-coverage ]", async () => {
     const scalingFactor = await fixture.lockup.SCALING_FACTOR();
     const fractionReserved = await fixture.lockup.FRACTION_RESERVED();
     const amount = ethers.utils.parseEther("1337");
@@ -90,16 +90,16 @@ describe("Lockup - public accessors", async () => {
   });
 
   describe("getState", async () => {
-    it("returns PreLock state when in PreLock", async () => {
+    it("returns PreLock state when in PreLock [ @skip-on-coverage ]", async () => {
       expect(await fixture.lockup.getState()).to.be.equal(LockupStates.PreLock);
     });
 
-    it("returns InLock state when lockup start block reached", async () => {
+    it("returns InLock state when lockup start block reached [ @skip-on-coverage ]", async () => {
       await jumpToInlockState(fixture);
       expect(await fixture.lockup.getState()).to.be.equal(LockupStates.InLock);
     });
 
-    it("returns PostLock state when lockup end block reached", async () => {
+    it("returns PostLock state when lockup end block reached [ @skip-on-coverage ]", async () => {
       await jumpToPostLockState(fixture);
       expect(await fixture.lockup.getState()).to.be.equal(
         LockupStates.PostLock
@@ -116,18 +116,18 @@ describe("Lockup - public accessors", async () => {
     });
 
     describe("payoutSafe", async () => {
-      it("returns false before profits have been aggregated", async () => {
+      it("returns false before profits have been aggregated [ @skip-on-coverage ]", async () => {
         expect(await fixture.lockup.payoutSafe()).to.be.equal(false);
       });
 
-      it("returns true after profits have been aggregated", async () => {
+      it("returns true after profits have been aggregated [ @skip-on-coverage ]", async () => {
         await jumpToPostLockState(fixture);
         await fixture.lockup.aggregateProfits();
         expect(await fixture.lockup.payoutSafe()).to.be.equal(true);
       });
     });
 
-    it("ownerOf returns correct owner of token", async () => {
+    it("ownerOf returns correct owner of token [ @skip-on-coverage ]", async () => {
       for (let i = 1; i <= numberOfLockingUsers; i++) {
         const account = accounts[i];
         const tokenID = stakedTokenIDs[i];
@@ -135,7 +135,7 @@ describe("Lockup - public accessors", async () => {
       }
     });
 
-    it("tokenOf returns correct token id for owner", async () => {
+    it("tokenOf returns correct token id for owner [ @skip-on-coverage ]", async () => {
       for (let i = 1; i <= numberOfLockingUsers; i++) {
         const account = accounts[i];
         const tokenID = stakedTokenIDs[i];
@@ -143,14 +143,14 @@ describe("Lockup - public accessors", async () => {
       }
     });
 
-    it("getPositionByIndex returns correct token id", async () => {
+    it("getPositionByIndex returns correct token id [ @skip-on-coverage ]", async () => {
       for (let i = 1; i <= numberOfLockingUsers; i++) {
         const tokenID = stakedTokenIDs[i];
         expect(await fixture.lockup.getPositionByIndex(i)).to.equal(tokenID);
       }
     });
 
-    it("getIndexByTokenId returns correct index for token id", async () => {
+    it("getIndexByTokenId returns correct index for token id [ @skip-on-coverage ]", async () => {
       for (let i = 1; i <= numberOfLockingUsers; i++) {
         const tokenID = stakedTokenIDs[i];
         expect(await fixture.lockup.getIndexByTokenId(tokenID)).to.equal(
@@ -160,13 +160,13 @@ describe("Lockup - public accessors", async () => {
     });
 
     describe("getCurrentNumberOfLockedPositions", async () => {
-      it("returns correct number of locked positions", async () => {
+      it("returns correct number of locked positions [ @skip-on-coverage ]", async () => {
         expect(
           await fixture.lockup.getCurrentNumberOfLockedPositions()
         ).to.equal(numberOfLockingUsers);
       });
 
-      it("updates amount when positions unlock", async () => {
+      it("updates amount when positions unlock [ @skip-on-coverage ]", async () => {
         await jumpToPostLockState(fixture);
         await fixture.lockup.aggregateProfits();
 
@@ -184,7 +184,7 @@ describe("Lockup - public accessors", async () => {
     });
 
     describe("getTotalSharesLocked", async () => {
-      it("returns correct amount of shares", async () => {
+      it("returns correct amount of shares [ @skip-on-coverage ]", async () => {
         const expectedShareAmount = originalLockedAmount;
 
         expect(await fixture.lockup.getTotalSharesLocked()).to.be.equal(
@@ -192,7 +192,7 @@ describe("Lockup - public accessors", async () => {
         );
       });
 
-      it("returns updated amount of shares if positions unlock", async () => {
+      it("returns updated amount of shares if positions unlock [ @skip-on-coverage ]", async () => {
         await jumpToInlockState(fixture);
 
         const numberOfPositionsToUnlock = 2;
@@ -212,13 +212,13 @@ describe("Lockup - public accessors", async () => {
     });
 
     describe("getTotalSharesLocked", async () => {
-      it("returns correct amount of shares", async () => {
+      it("returns correct amount of shares [ @skip-on-coverage ]", async () => {
         expect(await fixture.lockup.getTotalSharesLocked()).to.be.equal(
           originalLockedAmount
         );
       });
 
-      it("returns updated amount of shares when positions unlock when in PreLock state", async () => {
+      it("returns updated amount of shares when positions unlock when in PreLock state [ @skip-on-coverage ]", async () => {
         const numberOfPositionsToUnlock = 2;
         let expectedShareAmountUpdated = originalLockedAmount;
         for (let i = 1; i <= numberOfPositionsToUnlock; i++) {
@@ -244,7 +244,7 @@ describe("Lockup - public accessors", async () => {
         await fixture.lockup.aggregateProfits();
       });
 
-      it("getTemporaryRewardBalance returns correct reward balances of eth and tokens", async () => {
+      it("getTemporaryRewardBalance returns correct reward balances of eth and tokens [ @skip-on-coverage ]", async () => {
         for (let i = 1; i <= numberOfLockingUsers; i++) {
           const user = "user" + i;
           const expectedRewardEth = ethers.utils
@@ -270,7 +270,7 @@ describe("Lockup - public accessors", async () => {
         }
       });
 
-      it("estimateProfits returns amounts that can be collected from locked positions", async () => {
+      it("estimateProfits returns amounts that can be collected from locked positions [ @skip-on-coverage ]", async () => {
         const scalingFactor = await fixture.lockup.SCALING_FACTOR();
         const fractionReserved = await fixture.lockup.FRACTION_RESERVED();
         for (let i = 1; i <= numberOfLockingUsers; i++) {

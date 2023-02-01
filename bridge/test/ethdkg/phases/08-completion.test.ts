@@ -19,7 +19,7 @@ describe("ETHDKG: ETHDKG Completion", () => {
     return startAtGPKJ(validators4);
   }
 
-  it("should not allow completion until after the DisputeGPKj phase", async () => {
+  it("should not allow completion until after the DisputeGPKj phase [ @skip-on-coverage ]", async () => {
     const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
       deployFixture
     );
@@ -85,7 +85,7 @@ describe("ETHDKG: ETHDKG Completion", () => {
     );
   });
 
-  it("should not allow non-validators to complete ETHDKG", async () => {
+  it("should not allow non-validators to complete ETHDKG [ @skip-on-coverage ]", async () => {
     const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
       deployFixture
     );
@@ -132,7 +132,7 @@ describe("ETHDKG: ETHDKG Completion", () => {
       .withArgs(validatorAddress);
   });
 
-  it("should not allow double completion of ETHDKG", async () => {
+  it("should not allow double completion of ETHDKG [ @skip-on-coverage ]", async () => {
     const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
       deployFixture
     );
@@ -208,7 +208,7 @@ describe("ETHDKG: ETHDKG Completion", () => {
       ]);
   });
 
-  it("should not allow validators to participate in previous phases", async () => {
+  it("should not allow validators to participate in previous phases [ @skip-on-coverage ]", async () => {
     const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
       deployFixture
     );

@@ -264,7 +264,7 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
     ).to.be.revertedWithCustomError(fixture.validatorPool, "ConsensusRunning");
   });
 
-  it("Register validators, run ethdkg, schedule maintenance, do a snapshot, replace some validators, and rerun ethdkg", async function () {
+  it("Register validators, run ethdkg, schedule maintenance, do a snapshot, replace some validators, and rerun ethdkg [ @skip-on-coverage ]", async function () {
     const fixture = await getFixture();
     validators = await createValidators(fixture, validatorsSnapshots);
     stakingTokenIds = await stakeValidators(fixture, validators);

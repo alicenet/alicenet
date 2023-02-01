@@ -32,7 +32,7 @@ describe("Testing Staking Distribution", async () => {
     ({ fixture, accounts, stakedTokenIDs } = await loadFixture(deployFixture));
   });
 
-  it("attempts to distribute a first round", async () => {
+  it("attempts to distribute a first round [ @skip-on-coverage ]", async () => {
     showState("Initial distribution", await getState(fixture));
     const expectedState = await getState(fixture);
     await distributeProfits(fixture, accounts[0], profitETH, profitALCA);
@@ -62,7 +62,7 @@ describe("Testing Staking Distribution", async () => {
     assert.deepEqual(await getState(fixture), expectedState);
   });
 
-  it("attempts to distribute a second round (v2)", async () => {
+  it("attempts to distribute a second round (v2) [ @skip-on-coverage ]", async () => {
     showState("Initial distribution", await getState(fixture));
     const expectedState = await getState(fixture);
     await distributeProfits(fixture, accounts[0], profitETH, profitALCA);

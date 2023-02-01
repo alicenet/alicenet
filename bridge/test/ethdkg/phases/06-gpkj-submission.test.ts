@@ -11,7 +11,7 @@ import {
 } from "../setup";
 
 describe("ETHDKG: GPKj submission", () => {
-  it("should not allow GPKj submission outside of GPKjSubmission phase", async () => {
+  it("should not allow GPKj submission outside of GPKjSubmission phase [ @skip-on-coverage ]", async () => {
     const [ethdkg] = await startAtMPKSubmission(validators4);
 
     const txPromise = ethdkg
@@ -40,7 +40,7 @@ describe("ETHDKG: GPKj submission", () => {
     function deployFixture() {
       return startAtGPKJ(validators4);
     }
-    it("should not allow non-validators to submit GPKj submission", async () => {
+    it("should not allow non-validators to submit GPKj submission [ @skip-on-coverage ]", async () => {
       const [ethdkg] = await loadFixture(deployFixture);
 
       const validator11 = "0x23EA3Bad9115d436190851cF4C49C1032fA7579A";
@@ -54,7 +54,7 @@ describe("ETHDKG: GPKj submission", () => {
         .withArgs(validator11);
     });
 
-    it("should not allow submission of GPKj more than once from a validator", async () => {
+    it("should not allow submission of GPKj more than once from a validator [ @skip-on-coverage ]", async () => {
       const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
         deployFixture
       );
@@ -88,7 +88,7 @@ describe("ETHDKG: GPKj submission", () => {
         .withArgs(validators4[0].address);
     });
 
-    it("should not allow submission of empty GPKj", async () => {
+    it("should not allow submission of empty GPKj [ @skip-on-coverage ]", async () => {
       const [ethdkg] = await loadFixture(deployFixture);
 
       const ethDKGPhases = await ethers.getContractAt(
