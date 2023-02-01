@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -330,23 +331,18 @@ func (h *Hardhat) DeployFactoryAndContracts(tmpDir, baseFilesDir string) (string
 		"--show-stack-traces",
 		"--config",
 		h.configPath,
-		"deployContracts",
-		"--input-folder",
-		filepath.Join(baseFilesDir),
-		"--output-folder",
-		tmpDir,
+		"deploy-contracts",
+		"--skip-checks",
+		"--config-file",
+		filepath.Join(baseFilesDir, "deploymentConfig.json"),
 	)
 	if err != nil {
 		return "", err
 	}
-	logLines := strings.Split(string(output), "\n")
-	factoryAddress := ""
-	for _, line := range logLines {
-		if strings.Contains(line, "AliceNetFactory") {
-			addressLine := strings.Split(line, ":")
-			factoryAddress = strings.TrimSpace(addressLine[len(addressLine)-1])
-		}
-	}
+	outerRegex := regexp.MustCompile(`Deployed AliceNetFactory at address: (.*),.*`)
+	matchedOuter := outerRegex.FindAllSubmatch(output, -1)
+	factoryAddress := string(matchedOuter[0][1])
+	fmt.Printf("Factory address: %v", factoryAddress)
 	if factoryAddress == "" {
 		return "", fmt.Errorf("unable to find factoryAddress")
 	}
@@ -366,8 +362,7 @@ func (h *Hardhat) RegisterValidators(factoryAddress string, validators []string)
 		"--show-stack-traces",
 		"--config",
 		h.configPath,
-		"registerValidators",
-		"--test",
+		"register-validators",
 		"--factory-address",
 		factoryAddress,
 		strings.Join(validators, " "),
