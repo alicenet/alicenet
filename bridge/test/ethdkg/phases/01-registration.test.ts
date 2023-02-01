@@ -27,7 +27,7 @@ describe("ETHDKG: Registration Open", () => {
     ({ ethdkg, validatorPool } = await loadFixture(deployFixture));
   });
 
-  it("does not let registrations before ETHDKG Registration is open", async function () {
+  it("does not let registrations before ETHDKG Registration is open [ @skip-on-coverage ]", async function () {
     // add validators
     await addValidators(validatorPool, validators4);
 
@@ -55,7 +55,7 @@ describe("ETHDKG: Registration Open", () => {
       ]);
   });
 
-  it("does not let validators to register more than once", async function () {
+  it("does not let validators to register more than once [ @skip-on-coverage ]", async function () {
     // add validators
     await addValidators(validatorPool, validators4);
     await initializeETHDKG(ethdkg, validatorPool);
@@ -92,7 +92,7 @@ describe("ETHDKG: Registration Open", () => {
       );
   });
 
-  it("does not let validators to register with an incorrect key", async function () {
+  it("does not let validators to register with an incorrect key [ @skip-on-coverage ]", async function () {
     // add validators
     await addValidators(validatorPool, validators4);
 
@@ -126,7 +126,7 @@ describe("ETHDKG: Registration Open", () => {
     ).to.be.revertedWithCustomError(ethDKGPhases, `PublicKeyNotOnCurve`);
   });
 
-  it("does not let non-validators to register", async function () {
+  it("does not let non-validators to register [ @skip-on-coverage ]", async function () {
     // add validators
     await addValidators(validatorPool, validators4);
 

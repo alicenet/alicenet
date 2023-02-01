@@ -106,7 +106,7 @@ describe("lockup", async () => {
   });
 
   describe("lockFromApproval", async () => {
-    it("approves transfer of nft to lockup, calls lockFromApproval in prelock phase", async () => {
+    it("approves transfer of nft to lockup, calls lockFromApproval in prelock phase [ @skip-on-coverage ]", async () => {
       const account = accounts[1];
       const tokenID = stakedTokenIDs[1];
 
@@ -119,7 +119,7 @@ describe("lockup", async () => {
       );
     });
 
-    it("attempts to lockup 2 tokenID with 1 account", async () => {
+    it("attempts to lockup 2 tokenID with 1 account [ @skip-on-coverage ]", async () => {
       const account1 = accounts[1];
       const account2 = accounts[2];
       const tokenId1 = stakedTokenIDs[1];
@@ -136,7 +136,7 @@ describe("lockup", async () => {
       ).to.be.revertedWithCustomError(fixture.lockup, "AddressAlreadyLockedUp");
     });
 
-    it("attempts to lockup a tokenID that is already claimed", async () => {
+    it("attempts to lockup a tokenID that is already claimed [ @skip-on-coverage ]", async () => {
       const account1 = accounts[1];
       const tokenId1 = stakedTokenIDs[1];
       // acct 1 locks tokenid1
@@ -148,7 +148,7 @@ describe("lockup", async () => {
         .withArgs(tokenId1);
     });
 
-    it("attempts to lockup a tokenID after the lockup period", async () => {
+    it("attempts to lockup a tokenID after the lockup period [ @skip-on-coverage ]", async () => {
       await ensureBlockIsAtLeast(startBlock);
 
       const account1 = accounts[1];
@@ -160,7 +160,7 @@ describe("lockup", async () => {
   });
 
   describe("lockFromTransfer", async () => {
-    it("succeeds when transfer approved and in prelock phase", async () => {
+    it("succeeds when transfer approved and in prelock phase [ @skip-on-coverage ]", async () => {
       const account = accounts[1];
       const tokenID = stakedTokenIDs[1];
 
@@ -179,7 +179,7 @@ describe("lockup", async () => {
       );
     });
 
-    it("reverts when token id already claimed", async () => {
+    it("reverts when token id already claimed [ @skip-on-coverage ]", async () => {
       const account = accounts[1];
       const tokenID = stakedTokenIDs[1];
 
@@ -196,7 +196,7 @@ describe("lockup", async () => {
         .withArgs(tokenID);
     });
 
-    it("reverts when attempts to lockup 2 tokenID with 1 account", async () => {
+    it("reverts when attempts to lockup 2 tokenID with 1 account [ @skip-on-coverage ]", async () => {
       const account1 = accounts[1];
       const account2 = accounts[2];
       const tokenId1 = stakedTokenIDs[1];
@@ -226,7 +226,7 @@ describe("lockup", async () => {
       ).to.be.revertedWithCustomError(fixture.lockup, "AddressAlreadyLockedUp");
     });
 
-    it("reverts if token not owned by Lockup contract", async () => {
+    it("reverts if token not owned by Lockup contract [ @skip-on-coverage ]", async () => {
       const account1 = accounts[1];
       const tokenId1 = stakedTokenIDs[1];
 
@@ -238,7 +238,7 @@ describe("lockup", async () => {
       );
     });
 
-    it("reverts if called when state is not in PreLock", async () => {
+    it("reverts if called when state is not in PreLock [ @skip-on-coverage ]", async () => {
       await ensureBlockIsAtLeast(startBlock);
 
       const account1 = accounts[1];
@@ -251,7 +251,7 @@ describe("lockup", async () => {
   });
 
   describe("safe transfer to contract", async () => {
-    it("succeeds when safe transfer in prelock phase", async () => {
+    it("succeeds when safe transfer in prelock phase [ @skip-on-coverage ]", async () => {
       const account = accounts[1];
       const tokenID = stakedTokenIDs[1];
 
@@ -271,7 +271,7 @@ describe("lockup", async () => {
         fixture.lockup.address
       );
     });
-    it("succeeds when safe transfer 2 in prelock phase", async () => {
+    it("succeeds when safe transfer 2 in prelock phase [ @skip-on-coverage ]", async () => {
       const account = accounts[1];
       const tokenID = stakedTokenIDs[1];
 
@@ -292,7 +292,7 @@ describe("lockup", async () => {
         fixture.lockup.address
       );
     });
-    it("reverts if onERC721Received called directly", async () => {
+    it("reverts if onERC721Received called directly [ @skip-on-coverage ]", async () => {
       const account1 = accounts[1];
       const tokenId1 = stakedTokenIDs[1];
 
@@ -306,7 +306,7 @@ describe("lockup", async () => {
       ).to.be.revertedWithCustomError(fixture.lockup, "OnlyStakingNFTAllowed");
     });
 
-    it("reverts when attempts to lockup 2 tokenID with 1 account", async () => {
+    it("reverts when attempts to lockup 2 tokenID with 1 account [ @skip-on-coverage ]", async () => {
       const account1 = accounts[1];
       const account2 = accounts[2];
       const tokenId1 = stakedTokenIDs[1];
@@ -339,7 +339,7 @@ describe("lockup", async () => {
       ).to.be.revertedWithCustomError(fixture.lockup, "AddressAlreadyLockedUp");
     });
 
-    it("reverts if called when state is not in PreLock", async () => {
+    it("reverts if called when state is not in PreLock [ @skip-on-coverage ]", async () => {
       await ensureBlockIsAtLeast(startBlock);
 
       const account = accounts[1];

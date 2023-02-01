@@ -14,5 +14,21 @@
   "mochaExplorer.cwd": "./bridge",
   "mochaExplorer.configFile": "./bridge/.mocharc.json",
   "mochaExplorer.mochaPath": "./bridge/node_modules/mocha",
-  "mochaExplorer.fullTrace": true
+  "mochaExplorer.fullTrace": true,
+  "woke.compiler.solc.include_paths": [
+    "node_modules",
+    "./bridge",
+    "./bridge/node_modules"
+  ],
+  "woke.compiler.solc.ignore_paths": [
+    "node_modules",
+    ".woke-build",
+    "lib",
+    "./bridge/node_modules",
+    "./bridge/test_sol/",
+    "./bridge/forge-std",
+    "./bridge/contracts/BonusPool.sol",
+    "./bridge/contracts/Lockup.sol",
+    "./bridge/contracts/RewardPool.sol"
+  ]
 }

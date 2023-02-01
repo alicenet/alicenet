@@ -77,7 +77,7 @@ describe("BonusPool", async () => {
   });
 
   describe("createBonusStakedPosition", async () => {
-    it("Reverts if called from non factory address", async () => {
+    it("Reverts if called from non factory address [ @skip-on-coverage ]", async () => {
       await expect(
         fixture.bonusPool.connect(accounts[1]).createBonusStakedPosition()
       )
@@ -87,7 +87,7 @@ describe("BonusPool", async () => {
   });
 
   describe("terminate", async () => {
-    it("Reverts if called from non lockup address", async () => {
+    it("Reverts if called from non lockup address [ @skip-on-coverage ]", async () => {
       await expect(
         fixture.bonusPool.connect(accounts[1]).terminate()
       ).to.be.revertedWithCustomError(fixture.bonusPool, "CallerNotLockup");

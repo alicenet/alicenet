@@ -31,7 +31,7 @@ describe("Testing Staking Distribution", async () => {
     ));
   });
 
-  it("aggregate profits", async () => {
+  it("aggregate profits [ @skip-on-coverage ]", async () => {
     const stakedTokenIDs = await getSimulatedStakingPositions(
       fixture,
       accounts,
@@ -113,7 +113,7 @@ describe("Testing Staking Distribution", async () => {
     assert.deepEqual(await getState(fixture), expectedState);
   });
 
-  it("attempt to call aggregate profit without a staked bonus position", async () => {
+  it("attempt to call aggregate profit without a staked bonus position [ @skip-on-coverage ]", async () => {
     const approvalAmount = ethers.utils.parseEther("200000000");
     // approve public staking to spend account 1 alca
     const txResponse = await fixture.alca
@@ -130,7 +130,7 @@ describe("Testing Staking Distribution", async () => {
     ).to.revertedWithCustomError(fixture.bonusPool, "BonusTokenNotCreated");
   });
 
-  it("creates 100 positions in 100 accounts", async () => {
+  it("creates 100 positions in 100 accounts [ @skip-on-coverage ]", async () => {
     const numTxs = 100;
     const approvalAmount = ethers.utils.parseEther("200000000");
     // approve public staking to spend account 1 alca
