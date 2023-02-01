@@ -117,7 +117,7 @@ describe("StakingRouterV1", async () => {
   });
 
   describe("migrateAndStake", async () => {
-    it("reverts if stakingAmount is greater than migratedAmount", async () => {
+    it("reverts if stakingAmount is greater than migratedAmount [ @skip-on-coverage ]", async () => {
       const shortMigrationAmount = stakedAmount - 1n;
       // ensure no bonus tokens are minted
       await fixture.alca.connect(fixture.mockFactorySigner).finishEarlyStage();
@@ -143,7 +143,7 @@ describe("StakingRouterV1", async () => {
         .withArgs(stakedAmount, shortMigrationAmount);
     });
 
-    it("successfully migrates legacy token from sender, stakes amount and transfers position to address specified and remainder to sender", async () => {
+    it("successfully migrates legacy token from sender, stakes amount and transfers position to address specified and remainder to sender [ @skip-on-coverage ]", async () => {
       const sender = accounts[0];
       const recipient = accounts[1];
       const expectedMigrationAmountAfterConversion = await (
@@ -196,7 +196,7 @@ describe("StakingRouterV1", async () => {
   });
 
   describe("migrateStakeAndLock", async () => {
-    it("reverts if stakingAmount is greater than migratedAmount", async () => {
+    it("reverts if stakingAmount is greater than migratedAmount [ @skip-on-coverage ]", async () => {
       const shortMigrationAmount = stakedAmount - 1n;
       // ensure no bonus tokens are minted
       await fixture.alca.connect(fixture.mockFactorySigner).finishEarlyStage();
@@ -222,7 +222,7 @@ describe("StakingRouterV1", async () => {
         .withArgs(stakedAmount, shortMigrationAmount);
     });
 
-    it("successfully migrates legacy token from sender, stakes amount, locks stake and transfers position to address specified and remainder to sender", async () => {
+    it("successfully migrates legacy token from sender, stakes amount, locks stake and transfers position to address specified and remainder to sender [ @skip-on-coverage ]", async () => {
       const sender = accounts[0];
       const recipient = accounts[1];
       const expectedMigrationAmountAfterConversion = await (
@@ -268,7 +268,7 @@ describe("StakingRouterV1", async () => {
   });
 
   describe("stakeAndLock", async () => {
-    it("successfully stakes amount from sender and transfers position to specified account", async () => {
+    it("successfully stakes amount from sender and transfers position to specified account [ @skip-on-coverage ]", async () => {
       const sender = accounts[0];
       const recipient = accounts[1];
 

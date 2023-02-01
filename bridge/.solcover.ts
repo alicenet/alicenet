@@ -5,10 +5,13 @@ module.exports = {
     "mocks",
     "node_modules",
     "test_sol",
-    "lib",
-    "./contracts/BonusPool.sol",
-    "./contracts/Lockup.sol",
-    "./contracts/RewardPool.sol",
+    "BonusPool.sol",
+    "Lockup.sol",
+    "RewardPool.sol",
+    "StakingRouterV1.sol",
+    "utils/auth",
+    "libraries/errors",
+    "interfaces/",
   ],
   mocha: {
     grep: "@skip-on-coverage", // Find everything with this tag

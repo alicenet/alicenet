@@ -16,7 +16,7 @@ import {
 
 describe("ETHDKG: Submit Master Public Key", () => {
   describe("when not in MasterPublicKeySubmission phase", () => {
-    it("should not allow submission of master public key when not in MPKSubmission phase", async () => {
+    it("should not allow submission of master public key when not in MPKSubmission phase [ @skip-on-coverage ]", async () => {
       const [ethdkg, validatorPool, expectedNonce] =
         await startAtSubmitKeyShares(validators4);
       // distribute shares for all but 1 validators
@@ -58,7 +58,7 @@ describe("ETHDKG: Submit Master Public Key", () => {
     async function deployFixture() {
       return startAtMPKSubmission(validators4);
     }
-    it("should allow submission of master public key by a non-validator", async () => {
+    it("should allow submission of master public key by a non-validator [ @skip-on-coverage ]", async () => {
       const [ethdkg, , expectedNonce] = await loadFixture(deployFixture);
 
       // non-validator user tries to submit the Master Public key
@@ -73,7 +73,7 @@ describe("ETHDKG: Submit Master Public Key", () => {
       await assertEventMPKSet(tx, expectedNonce, val11MPK);
     });
 
-    it("should not allow submission of master public key more than once", async () => {
+    it("should not allow submission of master public key more than once [ @skip-on-coverage ]", async () => {
       const [ethdkg, , expectedNonce] = await loadFixture(deployFixture);
 
       // non-validator user tries to submit the Master Public key
@@ -109,7 +109,7 @@ describe("ETHDKG: Submit Master Public Key", () => {
         ]);
     });
 
-    it("should not allow submission of empty master public key", async () => {
+    it("should not allow submission of empty master public key [ @skip-on-coverage ]", async () => {
       const [ethdkg, ,] = await loadFixture(deployFixture);
 
       // empty MPK

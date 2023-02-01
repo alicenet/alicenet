@@ -15,7 +15,7 @@ import {
 } from "../../setup";
 
 describe("ETHDKG: Missing distribute share accusation", () => {
-  it("allows accusation of all missing validators after distribute shares Phase", async function () {
+  it("allows accusation of all missing validators after distribute shares Phase [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] =
       await startAtDistributeShares(validators4);
 
@@ -76,7 +76,7 @@ describe("ETHDKG: Missing distribute share accusation", () => {
       ]);
   });
 
-  it("allows accusation of some missing validators after distribute shares Phase", async function () {
+  it("allows accusation of some missing validators after distribute shares Phase [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] =
       await startAtDistributeShares(validators4);
 
@@ -139,7 +139,7 @@ describe("ETHDKG: Missing distribute share accusation", () => {
       ]);
   });
 
-  it("do not allow validators to proceed to the next phase if not all validators distributed their shares", async function () {
+  it("do not allow validators to proceed to the next phase if not all validators distributed their shares [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] =
       await startAtDistributeShares(validators4);
 
@@ -191,7 +191,7 @@ describe("ETHDKG: Missing distribute share accusation", () => {
 
   // MISSING REGISTRATION ACCUSATION TESTS
 
-  it("won't let not-distributed shares accusations to take place while ETHDKG Distribute Share Phase is open", async function () {
+  it("won't let not-distributed shares accusations to take place while ETHDKG Distribute Share Phase is open [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] =
       await startAtDistributeShares(validators4);
 
@@ -228,7 +228,7 @@ describe("ETHDKG: Missing distribute share accusation", () => {
       ]);
   });
 
-  it("should not allow validators who did not distributed shares in time to distribute on the accusation phase", async function () {
+  it("should not allow validators who did not distributed shares in time to distribute on the accusation phase [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] =
       await startAtDistributeShares(validators4);
 
@@ -268,7 +268,7 @@ describe("ETHDKG: Missing distribute share accusation", () => {
       ]);
   });
 
-  it("should not allow validators who did not distributed shares in time to submit Key shares", async function () {
+  it("should not allow validators who did not distributed shares in time to submit Key shares [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] =
       await startAtDistributeShares(validators4);
 
@@ -349,7 +349,7 @@ describe("ETHDKG: Missing distribute share accusation", () => {
       ]);
   });
 
-  it("should not allow accusation of not distributing shares of validators that distributed shares", async function () {
+  it("should not allow accusation of not distributing shares of validators that distributed shares [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] =
       await startAtDistributeShares(validators4);
 
@@ -383,7 +383,7 @@ describe("ETHDKG: Missing distribute share accusation", () => {
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
 
-  it("should not allow accusation of not distributing shares for non-validators", async function () {
+  it("should not allow accusation of not distributing shares for non-validators [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] =
       await startAtDistributeShares(validators4);
 
@@ -415,7 +415,7 @@ describe("ETHDKG: Missing distribute share accusation", () => {
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
 
-  it("should not allow not distributed shares accusations after accusation window has finished", async function () {
+  it("should not allow not distributed shares accusations after accusation window has finished [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] =
       await startAtDistributeShares(validators4);
 
@@ -460,7 +460,7 @@ describe("ETHDKG: Missing distribute share accusation", () => {
       ]);
   });
 
-  it("should not allow accusing a user that distributed the shares in the middle of the ones that did not", async function () {
+  it("should not allow accusing a user that distributed the shares in the middle of the ones that did not [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] =
       await startAtDistributeShares(validators4);
 
@@ -497,7 +497,7 @@ describe("ETHDKG: Missing distribute share accusation", () => {
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
 
-  it("should not allow double accusation of a user that did not share his shares", async function () {
+  it("should not allow double accusation of a user that did not share his shares [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] =
       await startAtDistributeShares(validators4);
 

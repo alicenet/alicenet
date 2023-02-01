@@ -28,7 +28,7 @@ describe("ETHDKG: Complete an ETHDKG Round and change validators", () => {
     [ethdkg, validatorPool, expectedNonce] = await loadFixture(deployFixture);
   });
 
-  it("completes ETHDKG with 10 validators then change to 4 validators", async function () {
+  it("completes ETHDKG with 10 validators then change to 4 validators [ @skip-on-coverage ]", async function () {
     expect(expectedNonce).eq(1);
     expect(await ethdkg.getMasterPublicKey()).to.be.deep.equal(
       validators10[0].mpk
@@ -72,7 +72,7 @@ describe("ETHDKG: Complete an ETHDKG Round and change validators", () => {
     expect(await ethdkg.isValidMasterPublicKey(randomHash)).to.be.equal(false);
   });
 
-  it("completes ETHDKG with 10 validators then a validator try to register without registration open", async function () {
+  it("completes ETHDKG with 10 validators then a validator try to register without registration open [ @skip-on-coverage ]", async function () {
     const txPromise = registerValidators(
       ethdkg,
       validatorPool,
