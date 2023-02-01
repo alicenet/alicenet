@@ -8,6 +8,7 @@ import (
 
 	mdefs "github.com/alicenet/alicenet/application/objs/capn"
 	"github.com/alicenet/alicenet/application/objs/tx"
+	"github.com/alicenet/alicenet/application/objs/txhash"
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/application/wrapper"
 	trie "github.com/alicenet/alicenet/badgerTrie"
@@ -366,7 +367,48 @@ func (b *Tx) computeTxHash() ([]byte, error) {
 		bytes0 := utils.MarshalUint32(uint32(0))
 		bytes1 := utils.MarshalUint32(uint32(1))
 		bytes2 := utils.MarshalUint32(uint32(2))
+
+		// Type processing
 		typeBytes := utils.MarshalUint32(b.Type)
+		typeData := []byte{}
+		typeData = append(typeData, bytes0...)
+		typeData = append(typeData, typeBytes...)
+		typeLeaf := txhash.LeafHash(typeData)
+
+		// Data processing
+		dataData := bytes1
+		dataLeaf := txhash.LeafHash(dataData)
+
+		// TxIn processing
+		txinData := [][]byte{}
+		for _, txIn := range b.Vin {
+			id, err := txIn.UTXOID()
+			if err != nil {
+				return nil, err
+			}
+			tmp := append(utils.CopySlice(bytes2), id...)
+			txinData = append(txinData, tmp)
+		}
+		vinHash := txhash.ComputeMerkleRoot(txinData)
+
+		// UTXO processing
+		utxoData := [][]byte{}
+		for idx, txOut := range b.Vout {
+			hsh, err := txOut.PreHash()
+			if err != nil {
+				return nil, err
+			}
+			id := MakeUTXOID(hsh, uint32(idx))
+			tmp := append(utils.CopySlice(bytes2), id...)
+			utxoData = append(utxoData, tmp)
+		}
+		voutHash := txhash.ComputeMerkleRoot(utxoData)
+
+		// Complete processing
+		tmp1 := txhash.HashPair(typeLeaf, dataLeaf)
+		tmp2 := txhash.HashPair(vinHash, voutHash)
+		root := txhash.HashPair(tmp1, tmp2)
+		return root, nil
 	} else {
 		return nil, errorz.ErrInvalid{}.New("tx.computeTxHash: invalid type")
 	}
