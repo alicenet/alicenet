@@ -230,7 +230,7 @@ describe("ETHDKG: Dispute GPKj", () => {
     );
   });
 
-  it("accuse a missing participant and bad participant at the same time [ @skip-on-coverag [ @skip-on-coverage ]", async function () {
+  it("accuse a missing participant and bad participant at the same time [ @skip-on-coverage ]", async function () {
     // last validator is the bad one
     const validators = validators10BadGPKJSubmission;
     const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
