@@ -1047,16 +1047,102 @@ func TestTxValidatePreSignature(t *testing.T) {
 	}
 }
 
-func TestTxCallTxHash(t *testing.T) {
-	tx := &Tx{}
-	tx.Fee = uint256.Zero()
-	hashTrue := crypto.Hasher([][]byte{}...)
-	hash, err := tx.TxHash()
+func TestTxComputeTxHashGood(t *testing.T) {
+	ownerSigner := &crypto.Secp256k1Signer{}
+	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
+		t.Fatal(err)
+	}
+
+	numConsumed := 5
+	consumedUTXOs := Vout{}
+	for i := 0; i < numConsumed; i++ {
+		consumedUTXOs = append(consumedUTXOs, makeVS(t, ownerSigner, 1+i))
+	}
+	err := consumedUTXOs.SetTxOutIdx()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Equal(hash, hashTrue) {
-		t.Fatal("txhashes do not match")
+
+	txInputs := []*TXIn{}
+	for i := 0; i < numConsumed; i++ {
+		txIn, err := consumedUTXOs[i].MakeTxIn()
+		if err != nil {
+			t.Fatal(err)
+		}
+		txInputs = append(txInputs, txIn)
+	}
+	generatedUTXOs := Vout{}
+	for i := 0; i < numConsumed; i++ {
+		generatedUTXOs = append(generatedUTXOs, makeVS(t, ownerSigner, 0))
+	}
+	err = generatedUTXOs.SetTxOutIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx := &Tx{
+		Vin:  txInputs,
+		Vout: generatedUTXOs,
+		Fee:  uint256.Zero(),
+	}
+	err = tx.SetTxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < numConsumed; i++ {
+		err = consumedUTXOs[i].valueStore.Sign(tx.Vin[i], ownerSigner)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	txhash, err := tx.computeTxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%x", txhash)
+}
+
+func TestTxComputeTxHashBad0(t *testing.T) {
+	tx := &Tx{}
+	_, err := tx.computeTxHash()
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxComputeTxHashBad1(t *testing.T) {
+	tx := &Tx{}
+	tx.Type = 1
+	_, err := tx.computeTxHash()
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxComputeTxHashBad2(t *testing.T) {
+	tx := &Tx{}
+	tx.Data = []byte{0}
+	_, err := tx.computeTxHash()
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxComputeTxHashBad3(t *testing.T) {
+	tx := &Tx{}
+	txin := &TXIn{}
+	tx.Vin = []*TXIn{txin}
+	_, err := tx.computeTxHash()
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxCallTxHashBad0(t *testing.T) {
+	tx := &Tx{}
+	tx.Fee = uint256.Zero()
+	_, err := tx.TxHash()
+	if err == nil {
+		t.Fatal("Should have raised error")
 	}
 }
 

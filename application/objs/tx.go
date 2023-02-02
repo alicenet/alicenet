@@ -11,7 +11,6 @@ import (
 	"github.com/alicenet/alicenet/application/objs/txhash"
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/application/wrapper"
-	trie "github.com/alicenet/alicenet/badgerTrie"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/errorz"
@@ -316,42 +315,7 @@ func (b *Tx) TxHash() ([]byte, error) {
 	if err := b.Vout.SetTxOutIdx(); err != nil {
 		return nil, err
 	}
-	keys := [][]byte{}
-	values := [][]byte{}
-	for _, txIn := range b.Vin {
-		id, err := txIn.UTXOID()
-		if err != nil {
-			return nil, err
-		}
-		keys = append(keys, id)
-		hsh, err := txIn.PreHash()
-		if err != nil {
-			return nil, err
-		}
-		values = append(values, hsh)
-	}
-	for idx, txOut := range b.Vout {
-		hsh, err := txOut.PreHash()
-		if err != nil {
-			return nil, err
-		}
-		id := MakeUTXOID(utils.CopySlice(hsh), uint32(idx))
-		keys = append(keys, id)
-		values = append(values, hsh)
-	}
-	// new in memory smt
-	smt := trie.NewMemoryTrie()
-	// smt update
-	keysSorted, valuesSorted, err := utils.SortKVs(keys, values)
-	if err != nil {
-		return nil, err
-	}
-	if len(keysSorted) == 0 && len(valuesSorted) == 0 {
-		rootHash := crypto.Hasher([][]byte{}...)
-		b.txHash = rootHash
-		return utils.CopySlice(b.txHash), nil
-	}
-	rootHash, err := smt.Update(keysSorted, valuesSorted)
+	rootHash, err := b.computeTxHash()
 	if err != nil {
 		return nil, err
 	}
@@ -363,6 +327,12 @@ func (b *Tx) computeTxHash() ([]byte, error) {
 	if b.Type == 0 {
 		if len(b.Data) != 0 {
 			return nil, errorz.ErrInvalid{}.New("tx.computeTxHash: Type 0; invalid data")
+		}
+		if len(b.Vin) == 0 {
+			return nil, errorz.ErrInvalid{}.New("tx.computeTxHash: Type 0; invalid Vin")
+		}
+		if len(b.Vout) == 0 {
+			return nil, errorz.ErrInvalid{}.New("tx.computeTxHash: Type 0; invalid Vout")
 		}
 		bytes0 := utils.MarshalUint32(uint32(0))
 		bytes1 := utils.MarshalUint32(uint32(1))
