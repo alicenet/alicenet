@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 
 	"github.com/alicenet/alicenet/constants"
@@ -49,11 +50,12 @@ type PeerManager struct {
 	gossipTxChan             chan interface{}
 	reqChan                  chan interface{}
 	upnpMapper               *transport.UPnPMapper
+	metrics                  *Peers
 }
 
 // NewPeerManager creates a new peer manager based on the Configuration
 // values passed to the process.
-func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin, pLimMax int, fwMode bool, fwHost, listenAddr, tprivk string, upnp bool) (*PeerManager, error) {
+func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin, pLimMax int, fwMode bool, fwHost, listenAddr, tprivk string, upnp bool, metricRegistry prometheus.Registerer) (*PeerManager, error) {
 	logger := logging.GetLogger(constants.LoggerPeerMan)
 	ctx := context.Background()
 	subCtx, cf := context.WithCancel(ctx)
@@ -111,6 +113,7 @@ func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin, pLi
 		transport:        p2ptransport,
 		p2pServerHandler: NewMuxServerHandler(logger, p2ptransport.NodeAddr(), p2pServer),
 		upnpMapper:       upnpMapper,
+		metrics:          NewPeerMetrics(metricRegistry),
 	}
 	pm.discServerHandler = NewP2PDiscoveryServerHandler(logger, p2ptransport.NodeAddr(), pm)
 	if fwMode { // config.Configuration.Transport.FirewallMode
@@ -391,6 +394,7 @@ func (ps *PeerManager) GetPeers(ctx context.Context, req *pb.GetPeersRequest) (*
 	if ps.fireWallMode {
 		return resp, nil
 	}
+
 	active, ok := ps.active.random()
 	if ok {
 		resp.Peers = append(resp.Peers, active)
@@ -399,6 +403,9 @@ func (ps *PeerManager) GetPeers(ctx context.Context, req *pb.GetPeersRequest) (*
 	if ok {
 		resp.Peers = append(resp.Peers, inactive)
 	}
+
+	ps.metrics.peerCount.WithLabelValues(metricStateActive).Set(float64(ps.active.len()))
+	ps.metrics.peerCount.WithLabelValues(metricStateInactive).Set(float64(ps.inactive.len()))
 	return resp, nil
 }
 

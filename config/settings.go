@@ -119,6 +119,10 @@ type EthKeyConfig struct {
 	NewPasswordFile string
 }
 
+type MetricsConfig struct {
+	Port uint16
+}
+
 type RootConfiguration struct {
 	ConfigurationFileName string
 	LoggingLevels         string // backwards compatibility
@@ -134,6 +138,7 @@ type RootConfiguration struct {
 	EthKey                EthKeyConfig
 	Version               string
 	Initialization        InitConfig
+	Metrics               MetricsConfig
 }
 
 // Configuration contains all active settings.
