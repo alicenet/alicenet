@@ -191,7 +191,7 @@ func (mon *monitor) Start() error {
 
 // eventLoop to process the events and chain changes.
 func (mon *monitor) eventLoop(logger *logrus.Entry) {
-	gcTimer := time.After(constants.MonDBGCFreq)
+	gcTimer := time.After(time.Second * constants.MonDBGCFreq)
 	for {
 		ctx, cf := context.WithTimeout(context.Background(), mon.timeout)
 		tock := mon.tickInterval
@@ -206,7 +206,7 @@ func (mon *monitor) eventLoop(logger *logrus.Entry) {
 			if err != nil {
 				logger.Debugf("Failed to reclaim any space during garbage collection: %v", err)
 			}
-			gcTimer = time.After(constants.MonDBGCFreq)
+			gcTimer = time.After(time.Second * constants.MonDBGCFreq)
 		case <-mon.closeChan:
 			mon.logger.Warnf("Received cancel request for event loop.")
 			cf()

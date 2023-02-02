@@ -99,6 +99,9 @@ func CreateAccounts(
 func InitializePrivateKeys(n int) []*ecdsa.PrivateKey {
 	_, pKey := GetAdminAccount()
 	privateKeys := []*ecdsa.PrivateKey{pKey}
+	if n <= 1 {
+		return privateKeys
+	}
 	privateKeys = append(privateKeys, SetupPrivateKeys(n-1)...)
 
 	return privateKeys

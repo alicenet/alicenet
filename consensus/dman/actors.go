@@ -97,6 +97,9 @@ func (a *RootActor) FlushCacheToDisk(txn *badger.Txn, height uint32) error {
 
 // CleanCache flushes all items older than 5 blocks from cache.
 func (a *RootActor) CleanCache(txn *badger.Txn, height uint32) error {
+	a.Lock()
+	defer a.Unlock()
+
 	if height > 10 {
 		dropKeys := a.bhc.DropBeforeHeight(height - 5)
 		dropKeys = append(dropKeys, a.txc.DropBeforeHeight(height-5)...)
