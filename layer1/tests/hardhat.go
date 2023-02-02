@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/evm"
 	"github.com/alicenet/alicenet/logging"
 )
 
@@ -33,10 +33,7 @@ func sanitizePathFromOutput(output []byte) string {
 	path = strings.ReplaceAll(path, "\n", "")
 
 	pathNodes := strings.Split(path, string(os.PathSeparator))
-	for _, pathNode := range pathNodes {
-		rootPath = append(rootPath, pathNode)
-	}
-
+	rootPath = append(rootPath, pathNodes...)
 	return filepath.Join(rootPath...)
 }
 
@@ -67,10 +64,10 @@ func GenerateHardhatConfig(tempDir, hardhatPath, endPoint string) string {
 	import "%[1]s/node_modules/@nomiclabs/hardhat-truffle5";
 	import "%[1]s/node_modules/@typechain/hardhat";
 	import { HardhatUserConfig} from "%[1]s/node_modules/hardhat/config";
-	import "%[1]s/scripts/generateImmutableAuth";
-	import "%[1]s/scripts/lib/alicenetFactoryTasks";
-	import "%[1]s/scripts/lib/alicenetTasks";
-	import "%[1]s/scripts/lib/gogogen";
+	import "%[1]s/scripts/tasks/generateImmutableAuth";
+	import "%[1]s/scripts/tasks/alicenetFactoryTasks";
+	import "%[1]s/scripts/tasks/alicenetTasks";
+	import "%[1]s/scripts/tasks/gogogen";
 
 	const config: HardhatUserConfig = {
 		networks: {
@@ -140,10 +137,22 @@ func executeCommand(dir, command string, args ...string) ([]byte, error) {
 	cmd.Dir = dir
 	output, err := cmd.Output()
 	if err != nil {
-		logger.Errorf("Error executing command: %v %v in dir: %v. %v", command, cmdArgs, dir, string(output))
+		logger.Errorf(
+			"Error executing command: %v %v in dir: %v. %v",
+			command,
+			cmdArgs,
+			dir,
+			string(output),
+		)
 		return output, err
 	}
-	logger.Tracef("Command Executed: %v %s in dir: %v. \n%s\n", command, cmdArgs, dir, string(output))
+	logger.Tracef(
+		"Command Executed: %v %s in dir: %v. \n%s\n",
+		command,
+		cmdArgs,
+		dir,
+		string(output),
+	)
 
 	return output, err
 }
@@ -207,7 +216,13 @@ func StartHardHatNode(hostname, port string) (*Hardhat, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not run hardhat node: %s", err)
 	}
-	hardhat := &Hardhat{cmd: cmd, url: fullUrl, configPath: configPath, port: port, hostname: hostname}
+	hardhat := &Hardhat{
+		cmd:        cmd,
+		url:        fullUrl,
+		configPath: configPath,
+		port:       port,
+		hostname:   hostname,
+	}
 	ctx, cf := context.WithTimeout(context.Background(), time.Second*100)
 	defer cf()
 	err = hardhat.WaitForHardHatNode(ctx)
@@ -220,7 +235,7 @@ func StartHardHatNode(hostname, port string) (*Hardhat, error) {
 func (h *Hardhat) WaitForHardHatNode(ctx context.Context) error {
 	logger := logging.GetLogger("test")
 	c := http.Client{}
-	msg := &ethereum.JsonRPCMessage{
+	msg := &evm.JsonRPCMessage{
 		Version: "2.0",
 		ID:      []byte("1"),
 		Method:  "eth_chainId",
@@ -245,7 +260,7 @@ func (h *Hardhat) WaitForHardHatNode(ctx context.Context) error {
 			return ctx.Err()
 		case <-time.After(time.Second):
 			body := bytes.NewReader(buff.Bytes())
-			_, err := c.Post(
+			resp, err := c.Post(
 				h.url,
 				"application/json",
 				body,
@@ -253,6 +268,7 @@ func (h *Hardhat) WaitForHardHatNode(ctx context.Context) error {
 			if err != nil {
 				continue
 			}
+			defer resp.Body.Close()
 			logger.Infof("HardHat node started correctly")
 			return nil
 		}
@@ -364,7 +380,7 @@ func (h *Hardhat) RegisterValidators(factoryAddress string, validators []string)
 
 // SendCommandViaRPC sends a command to the hardhat server via an RPC call.
 func SendCommandViaRPC(url, command string, params ...interface{}) error {
-	commandJson := &ethereum.JsonRPCMessage{
+	commandJson := &evm.JsonRPCMessage{
 		Version: "2.0",
 		ID:      []byte("1"),
 		Method:  command,
@@ -395,6 +411,7 @@ func SendCommandViaRPC(url, command string, params ...interface{}) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	_, err = io.ReadAll(resp.Body)
 	if err != nil {
@@ -444,7 +461,11 @@ func AdvanceTo(eth layer1.Client, target uint64) {
 func SetNextBlockBaseFee(endPoint string, target uint64) {
 	logger := logging.GetLogger("test")
 	logger.Tracef("Setting hardhat_setNextBlockBaseFeePerGas to %v", target)
-	err := SendCommandViaRPC(endPoint, "hardhat_setNextBlockBaseFeePerGas", "0x"+strconv.FormatUint(target, 16))
+	err := SendCommandViaRPC(
+		endPoint,
+		"hardhat_setNextBlockBaseFeePerGas",
+		"0x"+strconv.FormatUint(target, 16),
+	)
 	if err != nil {
 		panic(err)
 	}

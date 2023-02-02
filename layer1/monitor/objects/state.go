@@ -3,18 +3,17 @@ package objects
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/alicenet/alicenet/bridge/bindings"
 	"math/big"
 	"strings"
 	"sync"
 
-	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum/common"
-
+	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // MonitorState contains info required to monitor Ethereum.
@@ -178,7 +177,14 @@ func (s *MonitorState) Diff(o *MonitorState) (string, bool) {
 	d := []string{}
 	shouldWrite := false
 	if s.CommunicationFailures != o.CommunicationFailures {
-		d = append(d, fmt.Sprintf("CommunicationFailures: %v -> %v", s.CommunicationFailures, o.CommunicationFailures))
+		d = append(
+			d,
+			fmt.Sprintf(
+				"CommunicationFailures: %v -> %v",
+				s.CommunicationFailures,
+				o.CommunicationFailures,
+			),
+		)
 	}
 
 	if s.EthereumInSync != o.EthereumInSync {
@@ -186,7 +192,14 @@ func (s *MonitorState) Diff(o *MonitorState) (string, bool) {
 	}
 
 	if s.HighestBlockFinalized != o.HighestBlockFinalized {
-		d = append(d, fmt.Sprintf("HighestBlockFinalized: %v -> %v", s.HighestBlockFinalized, o.HighestBlockFinalized))
+		d = append(
+			d,
+			fmt.Sprintf(
+				"HighestBlockFinalized: %v -> %v",
+				s.HighestBlockFinalized,
+				o.HighestBlockFinalized,
+			),
+		)
 	}
 
 	if s.HighestBlockProcessed != o.HighestBlockProcessed {
@@ -194,17 +207,34 @@ func (s *MonitorState) Diff(o *MonitorState) (string, bool) {
 		// only write intermittent state diffs on blocks
 		// with no other changes of concern
 		shouldWrite = true
-		d = append(d, fmt.Sprintf("HighestBlockProcessed: %v -> %v", s.HighestBlockProcessed, o.HighestBlockProcessed))
+		d = append(
+			d,
+			fmt.Sprintf(
+				"HighestBlockProcessed: %v -> %v",
+				s.HighestBlockProcessed,
+				o.HighestBlockProcessed,
+			),
+		)
 	}
 
 	if s.HighestEpochProcessed != o.HighestEpochProcessed {
 		shouldWrite = true
-		d = append(d, fmt.Sprintf("HighestEpochProcessed: %v -> %v", s.HighestEpochProcessed, o.HighestEpochProcessed))
+		d = append(
+			d,
+			fmt.Sprintf(
+				"HighestEpochProcessed: %v -> %v",
+				s.HighestEpochProcessed,
+				o.HighestEpochProcessed,
+			),
+		)
 	}
 
 	if s.HighestEpochSeen != o.HighestEpochSeen {
 		shouldWrite = true
-		d = append(d, fmt.Sprintf("HighestEpochSeen: %v -> %v", s.HighestEpochSeen, o.HighestEpochSeen))
+		d = append(
+			d,
+			fmt.Sprintf("HighestEpochSeen: %v -> %v", s.HighestEpochSeen, o.HighestEpochSeen),
+		)
 	}
 
 	if s.EndpointInSync != o.EndpointInSync {
@@ -213,12 +243,22 @@ func (s *MonitorState) Diff(o *MonitorState) (string, bool) {
 
 	if s.LatestDepositProcessed != o.LatestDepositProcessed {
 		shouldWrite = true
-		d = append(d, fmt.Sprintf("LatestDepositProcessed: %v -> %v", s.LatestDepositProcessed, o.LatestDepositProcessed))
+		d = append(
+			d,
+			fmt.Sprintf(
+				"LatestDepositProcessed: %v -> %v",
+				s.LatestDepositProcessed,
+				o.LatestDepositProcessed,
+			),
+		)
 	}
 
 	if s.LatestDepositSeen != o.LatestDepositSeen {
 		shouldWrite = true
-		d = append(d, fmt.Sprintf("LatestDepositSeen: %v -> %v", s.LatestDepositSeen, o.LatestDepositSeen))
+		d = append(
+			d,
+			fmt.Sprintf("LatestDepositSeen: %v -> %v", s.LatestDepositSeen, o.LatestDepositSeen),
+		)
 	}
 
 	return strings.Join(d, ", "), shouldWrite

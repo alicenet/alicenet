@@ -42,11 +42,10 @@ library TXInPreImageParserLibrary {
     /// @param dataOffset offset to start reading the TXInPreImage state from inside src
     /// @dev Execution cost: 1084 gas
     /// @return txInPreImage a TXInPreImage struct
-    function extractInnerTXInPreImage(bytes memory src, uint256 dataOffset)
-        internal
-        pure
-        returns (TXInPreImage memory txInPreImage)
-    {
+    function extractInnerTXInPreImage(
+        bytes memory src,
+        uint256 dataOffset
+    ) internal pure returns (TXInPreImage memory txInPreImage) {
         if (dataOffset + _TX_IN_PRE_IMAGE_SIZE <= dataOffset) {
             revert GenericParserLibraryErrors.DataOffsetOverflow();
         }

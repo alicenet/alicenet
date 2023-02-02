@@ -46,7 +46,7 @@ describe("Testing Unlock Early", async () => {
     assert.deepEqual(await getState(fixture), expectedState);
   });
 
-  it("should not unlock early for a value greater than locked", async () => {
+  it("should not unlock early for a value greater than locked [ @skip-on-coverage ]", async () => {
     const user1Shares = ethers.utils.parseEther(
       example.distribution.users.user1.shares
     );
@@ -60,7 +60,7 @@ describe("Testing Unlock Early", async () => {
       .withArgs(user1Shares.add(1), user1Shares);
   });
 
-  it("should unlock-early user for 50% of initial position without re-staking unlocked shares", async () => {
+  it("should unlock-early user for 50% of initial position without re-staking unlocked shares [ @skip-on-coverage ]", async () => {
     const expectedState = await getState(fixture);
     const unlockingEarlyUsers = [2];
     for (let userId = 0; userId < unlockingEarlyUsers.length; userId++) {
@@ -112,7 +112,7 @@ describe("Testing Unlock Early", async () => {
     assert.deepEqual(await getState(fixture), expectedState);
   });
 
-  it("should unlock-early user for 50% of initial position re-staking unlocked shares", async () => {
+  it("should unlock-early user for 50% of initial position re-staking unlocked shares [ @skip-on-coverage ]", async () => {
     const expectedState = await getState(fixture);
     const unlockingEarlyUsers = [2];
     for (let userId = 0; userId < unlockingEarlyUsers.length; userId++) {
@@ -165,7 +165,7 @@ describe("Testing Unlock Early", async () => {
     assert.deepEqual(await getState(fixture), expectedState);
   });
 
-  it("should unlock-early user for 100% of initial position without re-staking unlocked shares", async () => {
+  it("should unlock-early user for 100% of initial position without re-staking unlocked shares [ @skip-on-coverage ]", async () => {
     const expectedState = await getState(fixture);
     const unlockingEarlyUsers = [3];
     for (let userId = 0; userId < unlockingEarlyUsers.length; userId++) {
@@ -223,7 +223,7 @@ describe("Testing Unlock Early", async () => {
     assert.deepEqual(await getState(fixture), expectedState);
   });
 
-  it("should unlock-early user for 100% of initial position re-staking unlocked shares", async () => {
+  it("should unlock-early user for 100% of initial position re-staking unlocked shares [ @skip-on-coverage ]", async () => {
     const expectedState = await getState(fixture);
     const unlockingEarlyUsers = [3];
     for (let userId = 0; userId < unlockingEarlyUsers.length; userId++) {
@@ -276,7 +276,7 @@ describe("Testing Unlock Early", async () => {
     assert.deepEqual(await getState(fixture), expectedState);
   });
 
-  it("should unlock-early user for 100% of initial position in two phases (50%+50%) without second distribution and re-staking unlocked shares", async () => {
+  it("should unlock-early user for 100% of initial position in two phases (50%+50%) without second distribution and re-staking unlocked shares [ @skip-on-coverage ]", async () => {
     const expectedState = await getState(fixture);
     const unlockingEarlyUsers = [2];
     for (let userId = 0; userId < unlockingEarlyUsers.length; userId++) {

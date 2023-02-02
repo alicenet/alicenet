@@ -65,12 +65,13 @@ func (ut *UTXOHandler) Init(height uint32) error {
 	return ut.trie.Init(height)
 }
 
+// GetTrie returns the UTXO trie.
 func (ut *UTXOHandler) GetTrie() *utxotrie.UTXOTrie {
 	return ut.trie
 }
 
-// IsValid verifies the rules of batches across transactions as is generated in
-// a block.
+// IsValid verifies the submitted transaction form a valid state transition
+// following the specified rules; returns the consumed UTXOs.
 func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight uint32, deposits objs.Vout) (objs.Vout, error) {
 	depositMap := make(map[string]*objs.TXOut)
 	for i := 0; i < len(deposits); i++ {
@@ -256,8 +257,8 @@ func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight ui
 		return nil, errorz.ErrInvalid{}.New(fmt.Sprintf("utxoHandler.IsValid; utxoIDs already in trie: %v", generatedUTXOsAlreadyInTheTrie))
 	}
 
-	// check that all consumed utxos are in the trie already
-	// IE they are available to be spent
+	// check that all consumed utxos are in the trie already;
+	// that is, they are available to be spent
 	consumedUTXOIDs, err := txs.ConsumedUTXOIDNoDeposits()
 	if err != nil {
 		utils.DebugTrace(ut.logger, err)
@@ -292,6 +293,7 @@ func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight ui
 // Consumed UTXOs will be deleted from the trie.
 // New UTXOs will be added to the trie.
 // Consumed deposits will be added to the trie.
+// The new StateRoot (root hash of the state trie) is returned.
 func (ut *UTXOHandler) ApplyState(txn *badger.Txn, txs objs.TxVec, height uint32) ([]byte, error) {
 	if len(txs) == 0 {
 		hsh, err := ut.trie.ApplyState(txn, txs, height)
@@ -429,7 +431,7 @@ func (ut *UTXOHandler) GetData(txn *badger.Txn, owner *objs.Owner, dataIdx []byt
 
 // GetExpiredForProposal returns a list of UTXOs, the IDs of those UTXOs, and
 // the total byte count of the returned UTXOs. This is used to collect expired
-// dataStores for deletion.
+// dataStores for deletion by making a CleanupTx.
 func (ut *UTXOHandler) GetExpiredForProposal(txn *badger.Txn, ctx context.Context, chainID, height uint32, curveSpec constants.CurveSpec, signer objs.Signer, maxBytes uint32, storage *wrapper.Storage) (*objs.Tx, uint32, error) {
 	//  What happens if we have more than 128 elements? maxObjects
 	utxoIDs, remaingBytes := ut.expIndex.GetExpiredObjects(txn, utils.Epoch(height), maxBytes, constants.MaxTxVectorLength)
@@ -590,6 +592,7 @@ func (ut *UTXOHandler) PaginateDataByOwner(txn *badger.Txn, owner *objs.Owner, c
 ///////////PRIVATE METHODS//////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+// addOne adds a UTXO to the UTXOHandler
 func (ut *UTXOHandler) addOne(txn *badger.Txn, utxo *objs.TXOut) error {
 	utxoID, err := utxo.UTXOID()
 	if err != nil {
@@ -669,6 +672,7 @@ func (ut *UTXOHandler) addOne(txn *badger.Txn, utxo *objs.TXOut) error {
 	return nil
 }
 
+// getInternal returns a UTXO from its utxoID
 func (ut *UTXOHandler) getInternal(txn *badger.Txn, utxoID []byte) (*objs.TXOut, error) {
 	key := ut.makeUTXOKey(utxoID)
 	utxo, err := db.GetUTXO(txn, key)
@@ -770,16 +774,23 @@ func (ut *UTXOHandler) addOneFastSync(txn *badger.Txn, utxo *objs.TXOut) error {
 			utils.DebugTrace(ut.logger, err)
 			return err
 		}
-		value, err := utxo.Value()
-		if err != nil {
-			utils.DebugTrace(ut.logger, err)
-			return err
+		///////// workaround for deposit utxos ////////////////
+		// Workaround for a historical deposit that was on the incorrect chain. Required to sync production
+		// nodes.
+		// Todo: remove this code after the UTXO state trie has been rebuilt
+		if !utxo.IsDeposit() {
+			value, err := utxo.Value()
+			if err != nil {
+				utils.DebugTrace(ut.logger, err)
+				return err
+			}
+			err = ut.valueIndex.Add(txn, utxoID, owner, value)
+			if err != nil {
+				utils.DebugTrace(ut.logger, err)
+				return err
+			}
 		}
-		err = ut.valueIndex.Add(txn, utxoID, owner, value)
-		if err != nil {
-			utils.DebugTrace(ut.logger, err)
-			return err
-		}
+		///////////////////////////////////////////////////////
 	default:
 		panic("utxoHandler.addOneFastSync; utxo type not defined")
 	}
@@ -835,6 +846,48 @@ func (ut *UTXOHandler) StoreSnapShotStateData(txn *badger.Txn, utxoID, preHash, 
 		}
 		return errorz.ErrInvalid{}.New(fmt.Sprintf("utxoHandler.StoreSnapShotStateData; utxoID does not match calcUtxoID; utxoID: %x; calcUtxoID: %x calcTxHash: %x TxOutIdx: %v", utxoID, calcUtxoID, calcTxHash, utxoIdxOut))
 	}
+	///////// workaround for deposit utxos ////////////////
+	// Workaround for a historical deposit that was on the incorrect chain. Required to sync production
+	// nodes.
+	// Todo: remove this code after the UTXO state trie has been rebuilt
+	if utxo.IsDeposit() {
+		value, err := utxo.Value()
+		if err != nil {
+			utils.DebugTrace(ut.logger, err)
+			return err
+		}
+		genericOwner, err := utxo.GenericOwner()
+		if err != nil {
+			utils.DebugTrace(ut.logger, err)
+			return err
+		}
+		account := genericOwner.Account
+
+		expectedAccount, err := utils.DecodeHexString("0xba7809a4114eef598132461f3202b5013e834cd5")
+		if err != nil {
+			utils.DebugTrace(ut.logger, err)
+			return err
+		}
+		expectedValue, err := new(uint256.Uint256).FromUint64(500000000000)
+		if err != nil {
+			utils.DebugTrace(ut.logger, err)
+			return err
+		}
+		if !bytes.Equal(account, expectedAccount) || !value.Eq(expectedValue) {
+			return errorz.ErrInvalid{}.New(
+				fmt.Sprintf(
+					"Bad deposit; account: %x value: %s", account, value.String(),
+				),
+			)
+		}
+
+		if err := ut.addOneFastSync(txn, utxo); err != nil {
+			utils.DebugTrace(ut.logger, err)
+			return err
+		}
+		return nil
+	}
+	///////////////////////////////////////////////////////
 	calcPreHash, err := utxo.PreHash()
 	if err != nil {
 		utils.DebugTrace(ut.logger, err)

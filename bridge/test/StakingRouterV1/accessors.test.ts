@@ -5,7 +5,7 @@ import { ethers } from "hardhat";
 import { deployCreateAndRegister } from "../../scripts/lib/alicenetFactory";
 import {
   CONTRACT_ADDR,
-  DEPLOYED_RAW,
+  EVENT_DEPLOYED_RAW,
   STAKING_ROUTER_V1,
 } from "../../scripts/lib/constants";
 import {
@@ -54,7 +54,7 @@ async function deployFixture() {
   // get the address from the event
   const lockupAddress = await getEventVar(
     txResponse,
-    DEPLOYED_RAW,
+    EVENT_DEPLOYED_RAW,
     CONTRACT_ADDR
   );
   // deploy staking router
@@ -62,18 +62,18 @@ async function deployFixture() {
   contractName = ethers.utils.formatBytes32String(STAKING_ROUTER_V1);
   txResponse = await deployCreateAndRegister(
     STAKING_ROUTER_V1,
-    fixture.factory.address,
+    fixture.factory,
     ethers,
     [],
-    undefined
+    contractName
   );
   // get the address from the event
   const stakingRouterAddress = await getEventVar(
     txResponse,
-    DEPLOYED_RAW,
+    EVENT_DEPLOYED_RAW,
     CONTRACT_ADDR
   );
-  await posFixtureSetup(fixture.factory, fixture.aToken);
+  await posFixtureSetup(fixture.factory, fixture.alca);
   const lockup = await ethers.getContractAt("Lockup", lockupAddress);
   // get the address of the reward pool from the lockup contract
   rewardPoolAddress = await lockup.getRewardPoolAddress();
@@ -109,7 +109,7 @@ describe("StakingRouterV1 - accessors", async () => {
     ({ fixture } = await loadFixture(deployFixture));
   });
 
-  it("getLegacyTokenAddress returns expected address", async () => {
+  it("getLegacyTokenAddress returns expected address [ @skip-on-coverage ]", async () => {
     expect(await fixture.stakingRouterV1.getLegacyTokenAddress()).to.equal(
       await fixture.legacyToken.address
     );

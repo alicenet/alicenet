@@ -30,6 +30,7 @@ func TestTXInPreImageGood(t *testing.T) {
 }
 
 func txinpiEqual(t *testing.T, txinpi1, txinpi2 *TXInPreImage) {
+	t.Helper()
 	if txinpi1.ChainID != txinpi2.ChainID {
 		t.Fatal("Do not agree on ChainID!")
 	}

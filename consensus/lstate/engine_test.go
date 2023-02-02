@@ -57,6 +57,8 @@ func TestEngine_Status_Ok(t *testing.T) {
 
 	st, err := engine.Status(st)
 	assert.Nil(t, err)
+	assert.NotNil(t, st)
+	assert.NotEmpty(t, st)
 }
 
 func TestEngine_Status_Error(t *testing.T) {
@@ -1301,6 +1303,7 @@ func TestEngine_updateLocalStateInternal17(t *testing.T) {
 }
 
 func initEngine(t *testing.T, txs []*appObjs.Tx) *Engine {
+	t.Helper()
 	ctx := context.Background()
 	logger := logging.GetLogger("test")
 
@@ -1347,6 +1350,7 @@ func initEngine(t *testing.T, txs []*appObjs.Tx) *Engine {
 }
 
 func initAdminBus(t *testing.T, logger *logrus.Logger, db *db.Database) *admin.Handlers {
+	t.Helper()
 	app := appmock.New()
 	s := initStorage(t, logger)
 
@@ -1357,6 +1361,7 @@ func initAdminBus(t *testing.T, logger *logrus.Logger, db *db.Database) *admin.H
 }
 
 func initStorage(t *testing.T, logger *logrus.Logger) dynamics.StorageGetter {
+	t.Helper()
 	db := mocks.NewTestDB()
 	s := &dynamics.Storage{}
 	if err := s.Init(db, logger); err != nil {

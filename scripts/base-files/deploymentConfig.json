@@ -1,0 +1,220 @@
+{
+  "contracts/AliceNetFactory.sol:AliceNetFactory": {
+    "name": "AliceNetFactory",
+    "fullyQualifiedName": "contracts/AliceNetFactory.sol:AliceNetFactory",
+    "salt": "",
+    "constructorArgs": {
+      "legacyToken_": "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    },
+    "initializerArgs": {}
+  },
+  "contracts/ALCABurner.sol:ALCABurner": {
+    "name": "ALCABurner",
+    "fullyQualifiedName": "contracts/ALCABurner.sol:ALCABurner",
+    "salt": "0x414c43414275726e657200000000000000000000000000000000000000000000",
+    "deployType": "deployUpgradeable",
+    "constructorArgs": {},
+    "initializerArgs": {}
+  },
+  "contracts/ALCAMinter.sol:ALCAMinter": {
+    "name": "ALCAMinter",
+    "fullyQualifiedName": "contracts/ALCAMinter.sol:ALCAMinter",
+    "salt": "0x414c43414d696e74657200000000000000000000000000000000000000000000",
+    "deployType": "deployUpgradeable",
+    "constructorArgs": {},
+    "initializerArgs": {}
+  },
+  "contracts/BridgePoolFactory.sol:BridgePoolFactory": {
+    "name": "BridgePoolFactory",
+    "fullyQualifiedName": "contracts/BridgePoolFactory.sol:BridgePoolFactory",
+    "salt": "0x427269646765506f6f6c466163746f7279000000000000000000000000000000",
+    "deployType": "deployUpgradeable",
+    "constructorArgs": {},
+    "initializerArgs": {}
+  },
+  "contracts/Dynamics.sol:Dynamics": {
+    "name": "Dynamics",
+    "fullyQualifiedName": "contracts/Dynamics.sol:Dynamics",
+    "salt": "0x44796e616d696373000000000000000000000000000000000000000000000000",
+    "deployType": "deployUpgradeable",
+    "constructorArgs": {},
+    "initializerArgs": {
+      "initialProposalTimeout_": 4000
+    }
+  },
+  "contracts/Foundation.sol:Foundation": {
+    "name": "Foundation",
+    "fullyQualifiedName": "contracts/Foundation.sol:Foundation",
+    "salt": "0x466f756e646174696f6e00000000000000000000000000000000000000000000",
+    "deployType": "deployUpgradeable",
+    "constructorArgs": {},
+    "initializerArgs": {}
+  },
+  "contracts/Governance.sol:Governance": {
+    "name": "Governance",
+    "fullyQualifiedName": "contracts/Governance.sol:Governance",
+    "salt": "0x476f7665726e616e636500000000000000000000000000000000000000000000",
+    "deployType": "deployUpgradeable",
+    "constructorArgs": {},
+    "initializerArgs": {}
+  },
+  "contracts/InvalidTxConsumptionAccusation.sol:InvalidTxConsumptionAccusation": {
+    "name": "InvalidTxConsumptionAccusation",
+    "fullyQualifiedName": "contracts/InvalidTxConsumptionAccusation.sol:InvalidTxConsumptionAccusation",
+    "salt": "0x92a73f2b6573522d63c8fc84b5d8e5d615fbb685c1b3d7fad2155fe227daf848",
+    "deployType": "deployUpgradeable",
+    "constructorArgs": {},
+    "initializerArgs": {}
+  },
+  "contracts/LiquidityProviderStaking.sol:LiquidityProviderStaking": {
+    "name": "LiquidityProviderStaking",
+    "fullyQualifiedName": "contracts/LiquidityProviderStaking.sol:LiquidityProviderStaking",
+    "salt": "0x4c697175696469747950726f76696465725374616b696e670000000000000000",
+    "deployType": "deployUpgradeable",
+    "constructorArgs": {},
+    "initializerArgs": {}
+  },
+  "contracts/MultipleProposalAccusation.sol:MultipleProposalAccusation": {
+    "name": "MultipleProposalAccusation",
+    "fullyQualifiedName": "contracts/MultipleProposalAccusation.sol:MultipleProposalAccusation",
+    "salt": "0xcfdffd500b4a956e03976b2afd69712237ffa06e35093df1e05e533688959fdc",
+    "deployType": "deployUpgradeable",
+    "constructorArgs": {},
+    "initializerArgs": {}
+  },
+  "contracts/PublicStaking.sol:PublicStaking": {
+    "name": "PublicStaking",
+    "fullyQualifiedName": "contracts/PublicStaking.sol:PublicStaking",
+    "salt": "0x5075626c69635374616b696e6700000000000000000000000000000000000000",
+    "deployType": "deployUpgradeable",
+    "constructorArgs": {},
+    "initializerArgs": {}
+  },
+  "contracts/Snapshots.sol:Snapshots": {
+    "name": "Snapshots",
+    "fullyQualifiedName": "contracts/Snapshots.sol:Snapshots",
+    "salt": "0x536e617073686f74730000000000000000000000000000000000000000000000",
+    "deployType": "deployUpgradeable",
+    "constructorArgs": {
+      "chainID_": 1337,
+      "epochLength_": 1024
+    },
+    "initializerArgs": {
+      "desperationDelay_": 10,
+      "desperationFactor_": 40
+    }
+  },
+  "contracts/StakingPositionDescriptor.sol:StakingPositionDescriptor": {
+    "name": "StakingPositionDescriptor",
+    "fullyQualifiedName": "contracts/StakingPositionDescriptor.sol:StakingPositionDescriptor",
+    "salt": "0x5374616b696e67506f736974696f6e44657363726970746f7200000000000000",
+    "deployType": "deployUpgradeable",
+    "constructorArgs": {},
+    "initializerArgs": {}
+  },
+  "contracts/ValidatorPool.sol:ValidatorPool": {
+    "name": "ValidatorPool",
+    "fullyQualifiedName": "contracts/ValidatorPool.sol:ValidatorPool",
+    "salt": "0x56616c696461746f72506f6f6c00000000000000000000000000000000000000",
+    "deployType": "deployUpgradeable",
+    "constructorArgs": {},
+    "initializerArgs": {
+      "stakeAmount_": 1,
+      "maxNumValidators_": 10,
+      "disputerReward_": 1,
+      "maxIntervalWithoutSnapshots_": 8192
+    }
+  },
+  "contracts/ValidatorStaking.sol:ValidatorStaking": {
+    "name": "ValidatorStaking",
+    "fullyQualifiedName": "contracts/ValidatorStaking.sol:ValidatorStaking",
+    "salt": "0x56616c696461746f725374616b696e6700000000000000000000000000000000",
+    "deployType": "deployUpgradeable",
+    "constructorArgs": {},
+    "initializerArgs": {}
+  },
+  "contracts/ALCB.sol:ALCB": {
+    "name": "ALCB",
+    "fullyQualifiedName": "contracts/ALCB.sol:ALCB",
+    "salt": "0x414c434200000000000000000000000000000000000000000000000000000000",
+    "deployGroup": "alcb",
+    "deployGroupIndex": "0",
+    "deployType": "deployCreateAndRegister",
+    "constructorArgs": {
+      "centralBridgeRouterAddress_": "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+    },
+    "initializerArgs": {}
+  },
+  "contracts/Distribution.sol:Distribution": {
+    "name": "Distribution",
+    "fullyQualifiedName": "contracts/Distribution.sol:Distribution",
+    "salt": "0x446973747269627574696f6e0000000000000000000000000000000000000000",
+    "deployGroup": "alcb",
+    "deployGroupIndex": "1",
+    "deployType": "deployUpgradeable",
+    "constructorArgs": {
+      "validatorStakingSplit_": "332",
+      "publicStakingSplit_": "332",
+      "liquidityProviderStakingSplit_": "332",
+      "protocolFeeSplit_": "4"
+    },
+    "initializerArgs": {}
+  },
+  "contracts/libraries/ethdkg/ETHDKGAccusations.sol:ETHDKGAccusations": {
+    "name": "ETHDKGAccusations",
+    "fullyQualifiedName": "contracts/libraries/ethdkg/ETHDKGAccusations.sol:ETHDKGAccusations",
+    "salt": "0x455448444b4741636375736174696f6e73000000000000000000000000000000",
+    "deployGroup": "ethdkg",
+    "deployGroupIndex": "0",
+    "deployType": "deployUpgradeable",
+    "constructorArgs": {},
+    "initializerArgs": {}
+  },
+  "contracts/libraries/ethdkg/ETHDKGPhases.sol:ETHDKGPhases": {
+    "name": "ETHDKGPhases",
+    "fullyQualifiedName": "contracts/libraries/ethdkg/ETHDKGPhases.sol:ETHDKGPhases",
+    "salt": "0x455448444b475068617365730000000000000000000000000000000000000000",
+    "deployGroup": "ethdkg",
+    "deployGroupIndex": "1",
+    "deployType": "deployUpgradeable",
+    "constructorArgs": {},
+    "initializerArgs": {}
+  },
+  "contracts/ETHDKG.sol:ETHDKG": {
+    "name": "ETHDKG",
+    "fullyQualifiedName": "contracts/ETHDKG.sol:ETHDKG",
+    "salt": "0x455448444b470000000000000000000000000000000000000000000000000000",
+    "deployGroup": "ethdkg",
+    "deployGroupIndex": "2",
+    "deployType": "deployUpgradeable",
+    "constructorArgs": {},
+    "initializerArgs": {
+      "phaseLength_": 40,
+      "confirmationLength_": 6
+    }
+  },
+  "contracts/Lockup.sol:Lockup": {
+    "name": "Lockup",
+    "fullyQualifiedName": "contracts/Lockup.sol:Lockup",
+    "salt": "0x4c6f636b75700000000000000000000000000000000000000000000000000000",
+    "deployGroup": "lockup",
+    "deployGroupIndex": "0",
+    "deployType": "deployCreateAndRegister",
+    "constructorArgs": {
+      "enrollmentPeriod_": "1000",
+      "lockDuration_": "6000",
+      "totalBonusAmount_": "2000000"
+    },
+    "initializerArgs": {}
+  },
+  "contracts/StakingRouterV1.sol:StakingRouterV1": {
+    "name": "StakingRouterV1",
+    "fullyQualifiedName": "contracts/StakingRouterV1.sol:StakingRouterV1",
+    "salt": "0x5374616b696e67526f7574657256310000000000000000000000000000000000",
+    "deployGroup": "lockup",
+    "deployGroupIndex": "1",
+    "deployType": "deployCreateAndRegister",
+    "constructorArgs": {},
+    "initializerArgs": {}
+  }
+}

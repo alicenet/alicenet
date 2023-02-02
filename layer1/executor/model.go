@@ -3,10 +3,11 @@ package executor
 import (
 	"context"
 	"errors"
+	"sync"
+
 	"github.com/alicenet/alicenet/layer1/executor/marshaller"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/transaction"
-	"sync"
 )
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -135,7 +136,7 @@ type ManagerResponseInfo struct {
 type requestStored struct {
 	BaseRequest
 	WrappedTask *marshaller.InstanceWrapper `json:"wrappedTask"`
-	killedAt    uint64                      `json:"killedAt"`
+	killedAt    uint64                      `json:"-"`
 }
 
 // responseStored for recovery.
@@ -232,11 +233,13 @@ var (
 	ErrNotScheduled                   = errors.New("scheduled task not found")
 	ErrWrongParams                    = errors.New("wrong start/end height for the task")
 	ErrTaskExpired                    = errors.New("the task is already expired")
-	ErrTaskNotAllowMultipleExecutions = errors.New("a task of the same type is already scheduled and allowed multiple execution for this type is false")
-	ErrTaskIsNil                      = errors.New("the task in the request is nil")
-	ErrTaskTypeNotInRegistry          = errors.New("the task type is not in registry")
-	ErrTaskIdEmpty                    = errors.New("the task id is empty")
-	ErrTaskKilledBeforeExecution      = errors.New("the task killed by request before execution")
-	ErrReceivedRequestClosedChan      = errors.New("received a request on a closed channel")
-	ErrReceivedResponseClosedChan     = errors.New("received a taskResponse on a closed channel")
+	ErrTaskNotAllowMultipleExecutions = errors.New(
+		"a task of the same type is already scheduled and allowed multiple execution for this type is false",
+	)
+	ErrTaskIsNil                  = errors.New("the task in the request is nil")
+	ErrTaskTypeNotInRegistry      = errors.New("the task type is not in registry")
+	ErrTaskIdEmpty                = errors.New("the task id is empty")
+	ErrTaskKilledBeforeExecution  = errors.New("the task killed by request before execution")
+	ErrReceivedRequestClosedChan  = errors.New("received a request on a closed channel")
+	ErrReceivedResponseClosedChan = errors.New("received a taskResponse on a closed channel")
 )

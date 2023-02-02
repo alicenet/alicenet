@@ -46,7 +46,7 @@ async function deployFixture() {
     undefined
   )) as Foundation;
 
-  await posFixtureSetup(fixture.factory, fixture.aToken);
+  await posFixtureSetup(fixture.factory, fixture.alca);
 
   // get the address of the reward pool from the lockup contract
   const lockupAddress = signers[5].address;
@@ -62,7 +62,7 @@ async function deployFixture() {
   // deploy reward pool
   const rewardPool = await (await ethers.getContractFactory("RewardPool"))
     .connect(asLockup)
-    .deploy(fixture.aToken.address, aliceNetFactoryAddress, totalBonusAmount);
+    .deploy(fixture.alca.address, aliceNetFactoryAddress, totalBonusAmount);
   // Deploy the bonus pool standalone
   const bonusPoolAddress = await rewardPool.getBonusPoolAddress();
   const bonusPool = await ethers.getContractAt("BonusPool", bonusPoolAddress);
@@ -73,7 +73,7 @@ async function deployFixture() {
   await depositEthForStakingRewards(signers, fixture.publicStaking, ethRewards);
   await depositTokensForStakingRewards(
     signers,
-    fixture.aToken,
+    fixture.alca,
     fixture.publicStaking,
     alcaRewards
   );
@@ -105,10 +105,10 @@ describe("BonusPool", async () => {
   });
 
   describe("createBonusStakedPosition", async () => {
-    it("Reverts if insufficient ALCA to stake", async () => {
+    it("Reverts if insufficient ALCA to stake [ @skip-on-coverage ]", async () => {
       const shortStakeAmount = fixture.totalBonusAmount.sub(1);
       await (
-        await fixture.aToken
+        await fixture.alca
           .connect(accounts[0])
           .transfer(fixture.bonusPool.address, shortStakeAmount)
       ).wait();
@@ -124,10 +124,10 @@ describe("BonusPool", async () => {
         )
         .withArgs(shortStakeAmount, fixture.totalBonusAmount);
     });
-    it("Succeeds if called from factory address and has enough ALCA", async () => {
+    it("Succeeds if called from factory address and has enough ALCA [ @skip-on-coverage ]", async () => {
       const exactStakeAmount = fixture.totalBonusAmount;
       await (
-        await fixture.aToken
+        await fixture.alca
           .connect(accounts[0])
           .transfer(fixture.bonusPool.address, exactStakeAmount)
       ).wait();
@@ -142,10 +142,10 @@ describe("BonusPool", async () => {
         .withArgs(expectedTokenId);
     });
 
-    it("Reverts if bonus position already created", async () => {
+    it("Reverts if bonus position already created [ @skip-on-coverage ]", async () => {
       const exactStakeAmount = fixture.totalBonusAmount;
       await (
-        await fixture.aToken
+        await fixture.alca
           .connect(accounts[0])
           .transfer(fixture.bonusPool.address, exactStakeAmount)
       ).wait();
@@ -168,7 +168,7 @@ describe("BonusPool", async () => {
   });
 
   describe("receive", async () => {
-    it("Reverts if sent from non public staking address", async () => {
+    it("Reverts if sent from non public staking address [ @skip-on-coverage ]", async () => {
       const ethAmount = BigNumber.from(1234);
 
       await expect(
@@ -179,7 +179,7 @@ describe("BonusPool", async () => {
       );
     });
 
-    it("Succeeds if sent from public staking address", async () => {
+    it("Succeeds if sent from public staking address [ @skip-on-coverage ]", async () => {
       const ethAmount = BigNumber.from(1234);
 
       const bonusPoolEthBalanceBefore = await ethers.provider.getBalance(
@@ -203,7 +203,7 @@ describe("BonusPool", async () => {
   });
 
   describe("terminate", async () => {
-    it("Reverts if bonus NFT is not created", async () => {
+    it("Reverts if bonus NFT is not created [ @skip-on-coverage ]", async () => {
       await expect(
         fixture.bonusPool.connect(fixture.mockLockupSigner).terminate()
       ).to.be.revertedWithCustomError(
@@ -212,11 +212,11 @@ describe("BonusPool", async () => {
       );
     });
 
-    it("Reverts if called before minted bonus stake free after time not reached", async () => {
+    it("Reverts if called before minted bonus stake free after time not reached [ @skip-on-coverage ]", async () => {
       await mintBonusPosition(
         accounts,
         fixture.totalBonusAmount,
-        fixture.aToken,
+        fixture.alca,
         fixture.bonusPool,
         fixture.mockFactorySigner
       );
@@ -236,13 +236,13 @@ describe("BonusPool", async () => {
         tokenId = await mintBonusPosition(
           accounts,
           fixture.totalBonusAmount,
-          fixture.aToken,
+          fixture.alca,
           fixture.bonusPool,
           fixture.mockFactorySigner
         );
       });
 
-      it("Distributes all bonus eth/tokens to reward pool", async () => {
+      it("Distributes all bonus eth/tokens to reward pool [ @skip-on-coverage ]", async () => {
         const [, freeAfter, , , ,] = await fixture.publicStaking.getPosition(
           tokenId
         );
@@ -255,7 +255,7 @@ describe("BonusPool", async () => {
         const rewardPoolEthBalanceBefore = await ethers.provider.getBalance(
           fixture.rewardPoolAddress
         );
-        const rewardPoolTokenBalanceBefore = await fixture.aToken.balanceOf(
+        const rewardPoolTokenBalanceBefore = await fixture.alca.balanceOf(
           fixture.rewardPoolAddress
         );
 
@@ -266,7 +266,7 @@ describe("BonusPool", async () => {
         const rewardPoolEthBalanceAfter = await ethers.provider.getBalance(
           fixture.rewardPoolAddress
         );
-        const rewardPoolTokenBalanceAfter = await fixture.aToken.balanceOf(
+        const rewardPoolTokenBalanceAfter = await fixture.alca.balanceOf(
           fixture.rewardPoolAddress
         );
 

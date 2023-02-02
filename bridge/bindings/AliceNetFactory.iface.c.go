@@ -15,14 +15,14 @@ type IAliceNetFactoryCaller interface {
 	//
 	// Solidity: function contracts() view returns(bytes32[] contracts_)
 	Contracts(opts *bind.CallOpts) ([][32]byte, error)
-	// GetATokenAddress is a free data retrieval call binding the contract method 0x82899756.
+	// GetALCAAddress is a free data retrieval call binding the contract method 0xb8a8732c.
 	//
-	// Solidity: function getATokenAddress() view returns(address)
-	GetATokenAddress(opts *bind.CallOpts) (common.Address, error)
-	// GetATokenCreationCodeHash is a free data retrieval call binding the contract method 0xf08ed586.
+	// Solidity: function getALCAAddress() view returns(address)
+	GetALCAAddress(opts *bind.CallOpts) (common.Address, error)
+	// GetALCACreationCodeHash is a free data retrieval call binding the contract method 0xa9c6e2cc.
 	//
-	// Solidity: function getATokenCreationCodeHash() view returns(bytes32)
-	GetATokenCreationCodeHash(opts *bind.CallOpts) ([32]byte, error)
+	// Solidity: function getALCACreationCodeHash() view returns(bytes32)
+	GetALCACreationCodeHash(opts *bind.CallOpts) ([32]byte, error)
 	// GetImplementation is a free data retrieval call binding the contract method 0xaaf10f42.
 	//
 	// Solidity: function getImplementation() view returns(address)
@@ -35,6 +35,10 @@ type IAliceNetFactoryCaller interface {
 	//
 	// Solidity: function getNumContracts() view returns(uint256)
 	GetNumContracts(opts *bind.CallOpts) (*big.Int, error)
+	// GetProxyImplementation is a free data retrieval call binding the contract method 0x204e1c7a.
+	//
+	// Solidity: function getProxyImplementation(address proxyAddress_) view returns(address)
+	GetProxyImplementation(opts *bind.CallOpts, proxyAddress_ common.Address) (common.Address, error)
 	// Lookup is a free data retrieval call binding the contract method 0xf39ec1f7.
 	//
 	// Solidity: function lookup(bytes32 salt_) view returns(address)

@@ -8,9 +8,12 @@ import "contracts/interfaces/IETHDKG.sol";
 import "contracts/interfaces/IETHDKGEvents.sol";
 import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
 import "contracts/utils/ETHDKGUtils.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableETHDKGAccusations.sol";
+import "contracts/utils/auth/ImmutableETHDKGPhases.sol";
 import "contracts/libraries/errors/ETHDKGErrors.sol";
-import "contracts/interfaces/IProxy.sol";
+import "contracts/libraries/proxy/ProxyImplementationGetter.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 /// @custom:salt ETHDKG
 /// @custom:deploy-type deployUpgradeable
@@ -22,10 +25,10 @@ contract ETHDKG is
     IETHDKGEvents,
     ETHDKGUtils,
     ImmutableETHDKGAccusations,
-    ImmutableETHDKGPhases
+    ImmutableETHDKGPhases,
+    ProxyImplementationGetter
 {
-    address internal immutable _ethdkgAccusations;
-    address internal immutable _ethdkgPhases;
+    using Address for address;
 
     modifier onlyValidator() {
         if (!IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender)) {
@@ -34,32 +37,12 @@ contract ETHDKG is
         _;
     }
 
-    constructor() ETHDKGStorage() ImmutableETHDKGAccusations() ImmutableETHDKGPhases() {
-        // bytes32("ETHDKGPhases") = 0x455448444b475068617365730000000000000000000000000000000000000000;
-        address ethdkgPhases = IProxy(_ethdkgPhasesAddress()).getImplementationAddress();
-        assembly {
-            if iszero(extcodesize(ethdkgPhases)) {
-                mstore(0x00, "ethdkgPhases size 0")
-                revert(0x00, 0x20)
-            }
-        }
-        _ethdkgPhases = ethdkgPhases;
-        // bytes32("ETHDKGAccusations") = 0x455448444b4741636375736174696f6e73000000000000000000000000000000;
-        address ethdkgAccusations = IProxy(_ethdkgAccusationsAddress()).getImplementationAddress();
-        assembly {
-            if iszero(extcodesize(ethdkgAccusations)) {
-                mstore(0x00, "ethdkgAccusations size 0")
-                revert(0x00, 0x20)
-            }
-        }
-        _ethdkgAccusations = ethdkgAccusations;
-    }
+    constructor() ETHDKGStorage() ImmutableETHDKGAccusations() ImmutableETHDKGPhases() {}
 
-    function initialize(uint256 phaseLength_, uint256 confirmationLength_)
-        public
-        initializer
-        onlyFactory
-    {
+    function initialize(
+        uint256 phaseLength_,
+        uint256 confirmationLength_
+    ) public initializer onlyFactory {
         _phaseLength = uint16(phaseLength_);
         _confirmationLength = uint16(confirmationLength_);
     }
@@ -108,10 +91,10 @@ contract ETHDKG is
         );
     }
 
-    function distributeShares(uint256[] memory encryptedShares, uint256[2][] memory commitments)
-        public
-        onlyValidator
-    {
+    function distributeShares(
+        uint256[] memory encryptedShares,
+        uint256[2][] memory commitments
+    ) public onlyValidator {
         _callPhaseContract(
             abi.encodeWithSignature(
                 "distributeShares(uint256[],uint256[2][])",
@@ -274,6 +257,7 @@ contract ETHDKG is
 
         _masterPublicKey = masterPublicKey_;
         _masterPublicKeyHash = keccak256(abi.encodePacked(masterPublicKey_));
+        _masterPublicKeyRegistry[_masterPublicKeyHash] = true;
         _nonce = uint64(nonce);
         _numParticipants = validatorCount_;
 
@@ -338,19 +322,15 @@ contract ETHDKG is
         return _badParticipants;
     }
 
-    function getParticipantInternalState(address participant)
-        public
-        view
-        returns (Participant memory)
-    {
+    function getParticipantInternalState(
+        address participant
+    ) public view returns (Participant memory) {
         return _participants[participant];
     }
 
-    function getParticipantsInternalState(address[] calldata participantAddresses)
-        public
-        view
-        returns (Participant[] memory)
-    {
+    function getParticipantsInternalState(
+        address[] calldata participantAddresses
+    ) public view returns (Participant[] memory) {
         Participant[] memory participants = new Participant[](participantAddresses.length);
 
         for (uint256 i = 0; i < participantAddresses.length; i++) {
@@ -374,6 +354,10 @@ contract ETHDKG is
         return _masterPublicKey;
     }
 
+    function isValidMasterPublicKey(bytes32 masterPublicKeyHash) public view returns (bool) {
+        return _masterPublicKeyRegistry[masterPublicKeyHash];
+    }
+
     function getMasterPublicKeyHash() public view returns (bytes32) {
         return _masterPublicKeyHash;
     }
@@ -383,31 +367,11 @@ contract ETHDKG is
     }
 
     function _callAccusationContract(bytes memory callData) internal returns (bytes memory) {
-        (bool success, bytes memory returnData) = _ethdkgAccusations.delegatecall(callData);
-        if (!success) {
-            // solhint-disable no-inline-assembly
-            assembly {
-                let ptr := mload(0x40)
-                let size := returndatasize()
-                returndatacopy(ptr, 0, size)
-                revert(ptr, size)
-            }
-        }
-        return returnData;
+        return _getETHDKGAccusationsAddress().functionDelegateCall(callData);
     }
 
     function _callPhaseContract(bytes memory callData) internal returns (bytes memory) {
-        (bool success, bytes memory returnData) = _ethdkgPhases.delegatecall(callData);
-        if (!success) {
-            // solhint-disable no-inline-assembly
-            assembly {
-                let ptr := mload(0x40)
-                let size := returndatasize()
-                returndatacopy(ptr, 0, size)
-                revert(ptr, size)
-            }
-        }
-        return returnData;
+        return _getETHDKGPhasesAddress().functionDelegateCall(callData);
     }
 
     function _initializeETHDKG() internal {
@@ -431,6 +395,20 @@ contract ETHDKG is
             _phaseLength,
             _confirmationLength
         );
+    }
+
+    function _getETHDKGPhasesAddress() internal view returns (address ethdkgPhases) {
+        ethdkgPhases = __getProxyImplementation(_ethdkgPhasesAddress());
+        if (!ethdkgPhases.isContract()) {
+            revert ETHDKGErrors.ETHDKGSubContractNotSet();
+        }
+    }
+
+    function _getETHDKGAccusationsAddress() internal view returns (address ethdkgAccusations) {
+        ethdkgAccusations = __getProxyImplementation(_ethdkgAccusationsAddress());
+        if (!ethdkgAccusations.isContract()) {
+            revert ETHDKGErrors.ETHDKGSubContractNotSet();
+        }
     }
 
     function _isETHDKGCompleted() internal view returns (bool) {

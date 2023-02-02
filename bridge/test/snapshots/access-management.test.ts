@@ -65,7 +65,7 @@ describe("Snapshots: Access control methods", () => {
         .connect(randomerSigner)
         .setSnapshotDesperationDelay(expectedDelay)
     )
-      .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+      .to.be.revertedWithCustomError(fixture.alcb, `OnlyFactory`)
       .withArgs(randomer.address, fixture.factory.address);
   });
 
@@ -89,7 +89,7 @@ describe("Snapshots: Access control methods", () => {
         .connect(randomerSigner)
         .setSnapshotDesperationFactor(expectedFactor)
     )
-      .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+      .to.be.revertedWithCustomError(fixture.alcb, `OnlyFactory`)
       .withArgs(randomer.address, fixture.factory.address);
   });
 

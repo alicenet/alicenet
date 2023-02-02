@@ -6,6 +6,6 @@ import "contracts/utils/Admin.sol";
 
 contract LegacyToken is ERC20, Admin {
     constructor() ERC20("LegacyToken", "LT") Admin(msg.sender) {
-        _mint(msg.sender, 320000000 * 10**decimals());
+        _mint(msg.sender, 320000000 * 10 ** decimals());
     }
 }

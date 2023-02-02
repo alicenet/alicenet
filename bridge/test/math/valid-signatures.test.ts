@@ -31,7 +31,7 @@ describe("CryptoLibrary: Validate Signature", () => {
     }
   });
 
-  it("Validate SignatureASM", async function () {
+  it("Validate SignatureASM [ @skip-on-coverage ]", async function () {
     for (let i = 0; i < amountRuns; i++) {
       const [success] = await crypto.validateSignatureASM(
         signedData[i].GroupSignature,
@@ -41,7 +41,7 @@ describe("CryptoLibrary: Validate Signature", () => {
     }
   });
 
-  it("ValidateSignatureASM should not validate bad signatures", async function () {
+  it("ValidateSignatureASM should not validate bad signatures [ @skip-on-coverage ]", async function () {
     for (let i = 0; i < amountRuns; i++) {
       const [success] = await crypto.validateBadSignatureASM(
         signedData[i].GroupSignature,

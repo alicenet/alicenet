@@ -90,10 +90,10 @@ type IPublicStakingCaller interface {
 		Accumulator *big.Int
 		Slush       *big.Int
 	}, error)
-	// GetTotalReserveAToken is a free data retrieval call binding the contract method 0x856de8d2.
+	// GetTotalReserveALCA is a free data retrieval call binding the contract method 0x3d8fe879.
 	//
-	// Solidity: function getTotalReserveAToken() view returns(uint256)
-	GetTotalReserveAToken(opts *bind.CallOpts) (*big.Int, error)
+	// Solidity: function getTotalReserveALCA() view returns(uint256)
+	GetTotalReserveALCA(opts *bind.CallOpts) (*big.Int, error)
 	// GetTotalReserveEth is a free data retrieval call binding the contract method 0x19b8be2f.
 	//
 	// Solidity: function getTotalReserveEth() view returns(uint256)

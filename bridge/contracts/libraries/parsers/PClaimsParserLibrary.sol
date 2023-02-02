@@ -48,11 +48,10 @@ library PClaimsParserLibrary {
     /// @return pClaims the PClaims struct
     /// @return pClaimsBinarySize the size of this PClaims
     /// @dev Execution cost: 7026 gas
-    function extractInnerPClaims(bytes memory src, uint256 dataOffset)
-        internal
-        pure
-        returns (PClaims memory pClaims, uint256 pClaimsBinarySize)
-    {
+    function extractInnerPClaims(
+        bytes memory src,
+        uint256 dataOffset
+    ) internal pure returns (PClaims memory pClaims, uint256 pClaimsBinarySize) {
         if (dataOffset + _PCLAIMS_SIZE <= dataOffset) {
             revert GenericParserLibraryErrors.DataOffsetOverflow();
         }

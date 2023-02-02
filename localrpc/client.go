@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	aobjs "github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/application/objs/uint256"
@@ -52,7 +53,9 @@ func (lrpc *Client) Connect(ctx context.Context) error {
 			lrpc.TimeOut = constants.MsgTimeout
 		}
 		// Set up a connection to the server.
-		conn, err := grpc.Dial(lrpc.Address, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(lrpc.TimeOut))
+		ctx, cancel := context.WithTimeout(context.Background(), lrpc.TimeOut)
+		defer cancel()
+		conn, err := grpc.DialContext(ctx, lrpc.Address, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 		if err != nil {
 			return err
 		}

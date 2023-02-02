@@ -28,7 +28,7 @@ describe("PublicStaking: Mint and Burn", async () => {
 
   it("User should be able to mint, burn then re-mint multiple times", async function () {
     for (let i = 0; i < 10; i++) {
-      await fixture.aToken.approve(fixture.publicStaking.address, 1000);
+      await fixture.alca.approve(fixture.publicStaking.address, 1000);
       const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
       const blockNumber = BigInt(tx.blockNumber as number);
       const tokenID = await getTokenIdFromTx(tx);
@@ -42,31 +42,27 @@ describe("PublicStaking: Mint and Burn", async () => {
         0n
       );
       await assertERC20Balance(
-        fixture.aToken,
+        fixture.alca,
         fixture.publicStaking.address,
         1000n
       );
       await mineBlocks(2n);
       const balanceBeforeUser = (
-        await fixture.aToken.balanceOf(adminSigner.address)
+        await fixture.alca.balanceOf(adminSigner.address)
       ).toBigInt();
-      const [[payoutEth, payoutAToken]] = await callFunctionAndGetReturnValues(
+      const [[payoutEth, payoutALCA]] = await callFunctionAndGetReturnValues(
         fixture.publicStaking,
         "burn",
         adminSigner,
         [tokenID]
       );
       expect(payoutEth.toBigInt()).to.be.equals(0n);
-      expect(payoutAToken.toBigInt()).to.be.equals(1000n);
+      expect(payoutALCA.toBigInt()).to.be.equals(1000n);
       expect(payoutEth.toBigInt()).to.be.equals(0n);
-      expect(payoutAToken.toBigInt()).to.be.equals(1000n);
+      expect(payoutALCA.toBigInt()).to.be.equals(1000n);
+      await assertERC20Balance(fixture.alca, fixture.publicStaking.address, 0n);
       await assertERC20Balance(
-        fixture.aToken,
-        fixture.publicStaking.address,
-        0n
-      );
-      await assertERC20Balance(
-        fixture.aToken,
+        fixture.alca,
         adminSigner.address,
         balanceBeforeUser + 1000n
       );
@@ -74,7 +70,7 @@ describe("PublicStaking: Mint and Burn", async () => {
   });
 
   it("Should not allow to burn a non-owned position", async function () {
-    await fixture.aToken
+    await fixture.alca
       .connect(adminSigner)
       .approve(fixture.publicStaking.address, 1000);
     const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
@@ -89,7 +85,7 @@ describe("PublicStaking: Mint and Burn", async () => {
   });
 
   it("Should not allow to burn a position before time", async function () {
-    await fixture.aToken
+    await fixture.alca
       .connect(adminSigner)
       .approve(fixture.publicStaking.address, 1000);
     const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
@@ -103,7 +99,7 @@ describe("PublicStaking: Mint and Burn", async () => {
   });
 
   it("Should not allow to burn same position more than once", async function () {
-    await fixture.aToken
+    await fixture.alca
       .connect(adminSigner)
       .approve(fixture.publicStaking.address, 1000);
     const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
@@ -119,7 +115,7 @@ describe("PublicStaking: Mint and Burn", async () => {
   describe("Mint stakeNFT and", async () => {
     let tokenID: number;
     beforeEach(async function () {
-      await fixture.aToken.approve(fixture.publicStaking.address, 1000);
+      await fixture.alca.approve(fixture.publicStaking.address, 1000);
       const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
       const blockNumber = BigInt(tx.blockNumber as number);
       tokenID = await getTokenIdFromTx(tx);
@@ -133,7 +129,7 @@ describe("PublicStaking: Mint and Burn", async () => {
         0n
       );
       await assertERC20Balance(
-        fixture.aToken,
+        fixture.alca,
         fixture.publicStaking.address,
         1000n
       );
@@ -141,10 +137,10 @@ describe("PublicStaking: Mint and Burn", async () => {
 
     it("Burn a NFT position", async function () {
       const balanceBeforeUser = (
-        await fixture.aToken.balanceOf(adminSigner.address)
+        await fixture.alca.balanceOf(adminSigner.address)
       ).toBigInt();
       await mineBlocks(3n);
-      const [[payoutEth, payoutAToken]] = await callFunctionAndGetReturnValues(
+      const [[payoutEth, payoutALCA]] = await callFunctionAndGetReturnValues(
         fixture.publicStaking,
         "burn",
         adminSigner,
@@ -152,27 +148,23 @@ describe("PublicStaking: Mint and Burn", async () => {
       );
 
       expect(payoutEth.toBigInt()).to.be.equals(0n);
-      expect(payoutAToken.toBigInt()).to.be.equals(1000n);
+      expect(payoutALCA.toBigInt()).to.be.equals(1000n);
+      await assertERC20Balance(fixture.alca, fixture.publicStaking.address, 0n);
       await assertERC20Balance(
-        fixture.aToken,
-        fixture.publicStaking.address,
-        0n
-      );
-      await assertERC20Balance(
-        fixture.aToken,
+        fixture.alca,
         adminSigner.address,
         balanceBeforeUser + 1000n
       );
     });
 
     it("burnTo a NFT position", async function () {
-      await assertERC20Balance(fixture.aToken, notAdminSigner.address, 0n);
+      await assertERC20Balance(fixture.alca, notAdminSigner.address, 0n);
       const balanceBeforeUser = (
-        await fixture.aToken.balanceOf(adminSigner.address)
+        await fixture.alca.balanceOf(adminSigner.address)
       ).toBigInt();
 
       await mineBlocks(3n);
-      const [[payoutEth, payoutAToken]] = await callFunctionAndGetReturnValues(
+      const [[payoutEth, payoutALCA]] = await callFunctionAndGetReturnValues(
         fixture.publicStaking,
         "burnTo",
         adminSigner,
@@ -180,15 +172,11 @@ describe("PublicStaking: Mint and Burn", async () => {
       );
 
       expect(payoutEth.toBigInt()).to.be.equals(0n);
-      expect(payoutAToken.toBigInt()).to.be.equals(1000n);
+      expect(payoutALCA.toBigInt()).to.be.equals(1000n);
+      await assertERC20Balance(fixture.alca, fixture.publicStaking.address, 0n);
+      await assertERC20Balance(fixture.alca, notAdminSigner.address, 1000n);
       await assertERC20Balance(
-        fixture.aToken,
-        fixture.publicStaking.address,
-        0n
-      );
-      await assertERC20Balance(fixture.aToken, notAdminSigner.address, 1000n);
-      await assertERC20Balance(
-        fixture.aToken,
+        fixture.alca,
         adminSigner.address,
         balanceBeforeUser
       );
@@ -199,7 +187,7 @@ describe("PublicStaking: Mint and Burn", async () => {
   describe("MintTo stakeNFT and", async () => {
     let tokenID: number;
     beforeEach(async function () {
-      await fixture.aToken.approve(fixture.publicStaking.address, 1000);
+      await fixture.alca.approve(fixture.publicStaking.address, 1000);
       const tx = await fixture.publicStaking
         .connect(adminSigner)
         .mintTo(notAdminSigner.address, 1000, 10);
@@ -215,11 +203,11 @@ describe("PublicStaking: Mint and Burn", async () => {
         0n
       );
       await assertERC20Balance(
-        fixture.aToken,
+        fixture.alca,
         fixture.publicStaking.address,
         1000n
       );
-      await assertERC20Balance(fixture.aToken, notAdminSigner.address, 0n);
+      await assertERC20Balance(fixture.alca, notAdminSigner.address, 0n);
     });
     it("Should not allow burn a NFT position before time", async function () {
       await expect(
@@ -232,11 +220,11 @@ describe("PublicStaking: Mint and Burn", async () => {
 
     it("Burn a NFT position", async function () {
       const balanceBeforeUser = (
-        await fixture.aToken.balanceOf(adminSigner.address)
+        await fixture.alca.balanceOf(adminSigner.address)
       ).toBigInt();
 
       await mineBlocks(11n);
-      const [[payoutEth, payoutAToken]] = await callFunctionAndGetReturnValues(
+      const [[payoutEth, payoutALCA]] = await callFunctionAndGetReturnValues(
         fixture.publicStaking,
         "burn",
         notAdminSigner,
@@ -244,15 +232,11 @@ describe("PublicStaking: Mint and Burn", async () => {
       );
 
       expect(payoutEth.toBigInt()).to.be.equals(0n);
-      expect(payoutAToken.toBigInt()).to.be.equals(1000n);
+      expect(payoutALCA.toBigInt()).to.be.equals(1000n);
+      await assertERC20Balance(fixture.alca, fixture.publicStaking.address, 0n);
+      await assertERC20Balance(fixture.alca, notAdminSigner.address, 1000n);
       await assertERC20Balance(
-        fixture.aToken,
-        fixture.publicStaking.address,
-        0n
-      );
-      await assertERC20Balance(fixture.aToken, notAdminSigner.address, 1000n);
-      await assertERC20Balance(
-        fixture.aToken,
+        fixture.alca,
         adminSigner.address,
         balanceBeforeUser
       );
@@ -261,11 +245,11 @@ describe("PublicStaking: Mint and Burn", async () => {
 
     it("BurnTo a NFT position", async function () {
       const balanceBeforeUser = (
-        await fixture.aToken.balanceOf(adminSigner.address)
+        await fixture.alca.balanceOf(adminSigner.address)
       ).toBigInt();
 
       await mineBlocks(11n);
-      const [[payoutEth, payoutAToken]] = await callFunctionAndGetReturnValues(
+      const [[payoutEth, payoutALCA]] = await callFunctionAndGetReturnValues(
         fixture.publicStaking,
         "burnTo",
         notAdminSigner,
@@ -273,15 +257,11 @@ describe("PublicStaking: Mint and Burn", async () => {
       );
 
       expect(payoutEth.toBigInt()).to.be.equals(0n);
-      expect(payoutAToken.toBigInt()).to.be.equals(1000n);
+      expect(payoutALCA.toBigInt()).to.be.equals(1000n);
+      await assertERC20Balance(fixture.alca, fixture.publicStaking.address, 0n);
+      await assertERC20Balance(fixture.alca, notAdminSigner.address, 0n);
       await assertERC20Balance(
-        fixture.aToken,
-        fixture.publicStaking.address,
-        0n
-      );
-      await assertERC20Balance(fixture.aToken, notAdminSigner.address, 0n);
-      await assertERC20Balance(
-        fixture.aToken,
+        fixture.alca,
         adminSigner.address,
         balanceBeforeUser + 1000n
       );

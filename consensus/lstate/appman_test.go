@@ -405,6 +405,7 @@ func TestAppMan_applyState_Error2(t *testing.T) {
 }
 
 func makeTx(t *testing.T) *appObjs.Tx {
+	t.Helper()
 	ownerSigner := &crypto.Secp256k1Signer{}
 	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
 		t.Fatal(err)
@@ -458,6 +459,7 @@ func makeTx(t *testing.T) *appObjs.Tx {
 }
 
 func makeVS(t *testing.T, ownerSigner appObjs.Signer, i int) (*appObjs.TXOut, *appObjs.ValueStore) {
+	t.Helper()
 	cid := uint32(2)
 	val := uint256.One()
 

@@ -13,7 +13,7 @@ import {
 } from "../../setup";
 
 describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
-  it("allows accusation of all missing validators at once", async () => {
+  it("allows accusation of all missing validators at once [ @skip-on-coverage ]", async () => {
     const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
       validators4
     );
@@ -61,7 +61,7 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
       ]);
   });
 
-  it("allows accusation of missing validators one at a time", async () => {
+  it("allows accusation of missing validators one at a time [ @skip-on-coverage ]", async () => {
     const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
       validators4
     );
@@ -87,7 +87,7 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
   });
 
-  it("should not move to next phase if there are accusations related to missing GPKj submissions", async () => {
+  it("should not move to next phase if there are accusations related to missing GPKj submissions [ @skip-on-coverage ]", async () => {
     const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
       validators4
     );
@@ -138,7 +138,7 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
   });
 
-  it("should not allow accusations related to missing GPKj submissions while on GPKj submission phase", async () => {
+  it("should not allow accusations related to missing GPKj submissions while on GPKj submission phase [ @skip-on-coverage ]", async () => {
     const [ethdkg] = await startAtGPKJ(validators4);
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
@@ -166,7 +166,7 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
       ]);
   });
 
-  it("should not allow GPKj submission after the GPKj submission phase", async () => {
+  it("should not allow GPKj submission after the GPKj submission phase [ @skip-on-coverage ]", async () => {
     const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
       validators4
     );
@@ -210,7 +210,7 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
   });
 
-  it("should not allow missing validators to complete ETHDKG after the GPKj submission phase", async () => {
+  it("should not allow missing validators to complete ETHDKG after the GPKj submission phase [ @skip-on-coverage ]", async () => {
     const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
       validators4
     );
@@ -252,7 +252,7 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
   });
 
-  it("should not allow accusation of missing GPKj to a validator that actually submitted it", async () => {
+  it("should not allow accusation of missing GPKj to a validator that actually submitted it [ @skip-on-coverage ]", async () => {
     const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
       validators4
     );
@@ -288,7 +288,7 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
   });
 
-  it("should not allow accusation of missing GPKj to a non-existent validator", async () => {
+  it("should not allow accusation of missing GPKj to a non-existent validator [ @skip-on-coverage ]", async () => {
     const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
       validators4
     );
@@ -320,7 +320,7 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
   });
 
-  it("should not allow accusation of missing GPKj after the accusation window is over", async () => {
+  it("should not allow accusation of missing GPKj after the accusation window is over [ @skip-on-coverage ]", async () => {
     const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
       validators4
     );
@@ -363,7 +363,7 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
   });
 
-  it("should not allow accusation of missing GPKj against a list of non-participants, non-validators, and legit participants", async () => {
+  it("should not allow accusation of missing GPKj against a list of non-participants, non-validators, and legit participants [ @skip-on-coverage ]", async () => {
     const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
       validators4
     );
@@ -399,7 +399,7 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
   });
 
-  it("should not allow double accusation of missing GPKj a non-participating validator", async () => {
+  it("should not allow double accusation of missing GPKj a non-participating validator [ @skip-on-coverage ]", async () => {
     const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
       validators4
     );

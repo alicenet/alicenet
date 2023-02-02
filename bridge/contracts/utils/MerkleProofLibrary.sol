@@ -13,7 +13,7 @@ library MerkleProofLibrary {
     /// @return `true` if the value of the bit is `1`, `false` if the value of the bit is `0`
     function bitSet(bytes memory self, uint16 index) internal pure returns (bool) {
         uint256 val;
-        assembly {
+        assembly ("memory-safe") {
             val := shr(sub(255, index), and(mload(add(self, 0x20)), shl(sub(255, index), 1)))
         }
         return val == 1;
@@ -28,7 +28,7 @@ library MerkleProofLibrary {
     /// the bit is `0`
     function bitSetBytes32(bytes32 self, uint16 index) internal pure returns (bool) {
         uint256 val;
-        assembly {
+        assembly ("memory-safe") {
             val := shr(sub(255, index), and(self, shl(sub(255, index), 1)))
         }
         return val == 1;
@@ -54,10 +54,10 @@ library MerkleProofLibrary {
     /// @notice Checks if `proof` is a valid inclusion proof.
     /// @param _proof the merkle proof (audit path)
     /// @param root the root of the tree
-    function verifyInclusion(MerkleProofParserLibrary.MerkleProof memory _proof, bytes32 root)
-        internal
-        pure
-    {
+    function verifyInclusion(
+        MerkleProofParserLibrary.MerkleProof memory _proof,
+        bytes32 root
+    ) internal pure {
         if (_proof.proofValue == 0) {
             revert MerkleProofLibraryErrors.InclusionZero();
         }
@@ -78,10 +78,10 @@ library MerkleProofLibrary {
     /// @notice Checks if `proof` is a valid non-inclusion proof.
     /// @param _proof the merkle proof (audit path)
     /// @param root the root of the tree
-    function verifyNonInclusion(MerkleProofParserLibrary.MerkleProof memory _proof, bytes32 root)
-        internal
-        pure
-    {
+    function verifyNonInclusion(
+        MerkleProofParserLibrary.MerkleProof memory _proof,
+        bytes32 root
+    ) internal pure {
         if (_proof.proofKey == 0 && _proof.proofValue == 0) {
             // Non-inclusion default value
             bytes32 _keyHash = bytes32(
@@ -152,7 +152,7 @@ library MerkleProofLibrary {
         for (uint256 i = 0; i < proofHeight; i++) {
             if (bitSet(bitmap, uint16(i))) {
                 proofIdx += 32;
-                assembly {
+                assembly ("memory-safe") {
                     el := mload(add(auditPath, proofIdx))
                 }
             } else {

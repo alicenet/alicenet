@@ -2,7 +2,10 @@
 pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableALCA.sol";
+import "contracts/utils/auth/ImmutablePublicStaking.sol";
+import "contracts/utils/auth/ImmutableFoundation.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/utils/MagicEthTransfer.sol";
@@ -20,7 +23,7 @@ import "contracts/Lockup.sol";
  * @dev deployed by the RewardPool contract
  */
 contract BonusPool is
-    ImmutableAToken,
+    ImmutableALCA,
     ImmutablePublicStaking,
     ImmutableFoundation,
     ERC20SafeTransfer,
@@ -44,7 +47,7 @@ contract BonusPool is
         uint256 totalBonusAmount_
     )
         ImmutableFactory(aliceNetFactory_)
-        ImmutableAToken()
+        ImmutableALCA()
         ImmutablePublicStaking()
         ImmutableFoundation()
     {
@@ -67,16 +70,15 @@ contract BonusPool is
         if (_tokenID != 0) {
             revert LockupErrors.BonusTokenAlreadyCreated();
         }
-        IERC20 alca = IERC20(_aTokenAddress());
+        IERC20 alca = IERC20(_alcaAddress());
         //get the total balance of ALCA owned by bonus pool as stake amount
         uint256 _stakeAmount = alca.balanceOf(address(this));
-        uint256 totalBonusAmount = _totalBonusAmount;
-        if (_stakeAmount < totalBonusAmount) {
-            revert LockupErrors.NotEnoughALCAToStake(_stakeAmount, totalBonusAmount);
+        if (_stakeAmount < _totalBonusAmount) {
+            revert LockupErrors.NotEnoughALCAToStake(_stakeAmount, _totalBonusAmount);
         }
         // approve the staking contract to transfer the ALCA
-        alca.approve(_publicStakingAddress(), totalBonusAmount);
-        uint256 tokenID = IStakingNFT(_publicStakingAddress()).mint(totalBonusAmount);
+        alca.approve(_publicStakingAddress(), _totalBonusAmount);
+        uint256 tokenID = IStakingNFT(_publicStakingAddress()).mint(_totalBonusAmount);
         _tokenID = tokenID;
         emit BonusPositionCreated(_tokenID);
     }
@@ -88,17 +90,19 @@ contract BonusPool is
             revert LockupErrors.BonusTokenNotCreated();
         }
         // burn the nft to collect all profits.
-        (uint256 payoutEth, uint256 payoutToken) = IStakingNFT(_publicStakingAddress()).burn(
-            _tokenID
-        );
+        IStakingNFT(_publicStakingAddress()).burn(_tokenID);
         // restarting the _tokenID
         _tokenID = 0;
+        // send the total balance of ALCA to the rewardPool contract
+        uint256 alcaBalance = IERC20(_alcaAddress()).balanceOf(address(this));
         _safeTransferERC20(
-            IERC20Transferable(_aTokenAddress()),
+            IERC20Transferable(_alcaAddress()),
             _getRewardPoolAddress(),
-            payoutToken
+            alcaBalance
         );
-        RewardPool(_getRewardPoolAddress()).deposit{value: payoutEth}(payoutToken);
+        // send also all the balance of ether
+        uint256 ethBalance = address(this).balance;
+        RewardPool(_getRewardPoolAddress()).deposit{value: ethBalance}(alcaBalance);
     }
 
     /// @notice gets the lockup contract address
@@ -119,16 +123,21 @@ contract BonusPool is
         return _tokenID;
     }
 
+    /// @notice gets the total amount of ALCA that was staked initially in the publicStaking position
+    /// @return the total amount of ALCA that was staked initially in the publicStaking position
+    function getTotalBonusAmount() public view returns (uint256) {
+        return _totalBonusAmount;
+    }
+
     /// @notice estimates a user's bonus amount + bonus position profits.
     /// @param currentSharesLocked_ The current number of shares locked in the lockup contract
     /// @param userShares_ The amount of shares that a user locked-up.
     /// @return bonusRewardEth the estimated amount ether profits for a user
     /// @return bonusRewardToken the estimated amount ALCA profits for a user
-    function estimateBonusAmountWithReward(uint256 currentSharesLocked_, uint256 userShares_)
-        public
-        view
-        returns (uint256 bonusRewardEth, uint256 bonusRewardToken)
-    {
+    function estimateBonusAmountWithReward(
+        uint256 currentSharesLocked_,
+        uint256 userShares_
+    ) public view returns (uint256 bonusRewardEth, uint256 bonusRewardToken) {
         if (_tokenID == 0) {
             return (0, 0);
         }

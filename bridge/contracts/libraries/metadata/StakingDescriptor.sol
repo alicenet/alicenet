@@ -23,11 +23,9 @@ library StakingDescriptor {
     /// @notice Constructs a token URI out of token URI parameters
     /// @param params parameters of the token URI
     /// @return the token URI
-    function constructTokenURI(ConstructTokenURIParams memory params)
-        internal
-        pure
-        returns (string memory)
-    {
+    function constructTokenURI(
+        ConstructTokenURIParams memory params
+    ) internal pure returns (string memory) {
         string memory name = generateName(params);
         string memory description = generateDescription();
         string memory attributes = generateAttributes(
@@ -90,11 +88,9 @@ library StakingDescriptor {
     /// @notice Generates a SVG image out of a token URI
     /// @param params parameters of the token URI
     /// @return svg A string with SVG data
-    function generateSVGImage(ConstructTokenURIParams memory params)
-        internal
-        pure
-        returns (string memory svg)
-    {
+    function generateSVGImage(
+        ConstructTokenURIParams memory params
+    ) internal pure returns (string memory svg) {
         StakingSVG.StakingSVGParams memory svgParams = StakingSVG.StakingSVGParams({
             shares: params.shares.toString(),
             freeAfter: params.freeAfter.toString(),
@@ -119,7 +115,7 @@ library StakingDescriptor {
 
     /// @notice Generates the attributes part of the Staking Descriptor
     /// @param  tokenId the token id of this descriptor
-    /// @param  shares number of AToken
+    /// @param  shares number of ALCA
     /// @param  freeAfter block number after which the position may be burned.
     /// @param  withdrawFreeAfter block number after which the position may be collected or burned
     /// @param  accumulatorEth the last value of the ethState accumulator this account performed a withdraw at
@@ -160,11 +156,9 @@ library StakingDescriptor {
             );
     }
 
-    function generateName(ConstructTokenURIParams memory params)
-        private
-        pure
-        returns (string memory)
-    {
+    function generateName(
+        ConstructTokenURIParams memory params
+    ) private pure returns (string memory) {
         return
             string(
                 abi.encodePacked("AliceNet Staked Token For Position #", params.tokenId.toString())

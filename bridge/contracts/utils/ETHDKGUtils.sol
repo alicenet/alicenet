@@ -40,16 +40,14 @@ abstract contract ETHDKGUtils {
 
     function _isBitSet(uint256 self, uint8 index) internal pure returns (bool) {
         uint256 val;
-        // solhint-disable no-inline-assembly
-        assembly {
+        assembly ("memory-safe") {
             val := and(shr(index, self), 1)
         }
         return (val == 1);
     }
 
     function _setBit(uint256 self, uint8 index) internal pure returns (uint256) {
-        // solhint-disable no-inline-assembly
-        assembly {
+        assembly ("memory-safe") {
             self := or(shl(index, 1), self)
         }
         return (self);

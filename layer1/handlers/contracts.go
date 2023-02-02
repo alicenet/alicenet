@@ -4,7 +4,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/chains/ethereum"
+	"github.com/alicenet/alicenet/layer1/evm"
 )
 
 var _ layer1.AllSmartContracts = &AllSmartContractsHandle{}
@@ -15,8 +16,13 @@ type AllSmartContractsHandle struct {
 	ethereumContracts *ethereum.Contracts
 }
 
-func NewAllSmartContractsHandle(eth *ethereum.Client, contractFactoryAddress common.Address) layer1.AllSmartContracts {
-	return &AllSmartContractsHandle{ethereumContracts: ethereum.NewContracts(eth, contractFactoryAddress)}
+func NewAllSmartContractsHandle(
+	eth *evm.Client,
+	contractFactoryAddress common.Address,
+) layer1.AllSmartContracts {
+	return &AllSmartContractsHandle{
+		ethereumContracts: ethereum.NewContracts(eth, contractFactoryAddress),
+	}
 }
 
 func (ch *AllSmartContractsHandle) EthereumContracts() layer1.EthereumContracts {

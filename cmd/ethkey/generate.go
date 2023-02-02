@@ -2,8 +2,10 @@ package ethkey
 
 import (
 	"crypto/ecdsa"
-	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -11,8 +13,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
-	"path/filepath"
 )
 
 const (
@@ -77,20 +77,20 @@ func GenerateKeyFile(generateRandomPass bool, logger *logrus.Entry) ([]byte, *ke
 		// Load private key from file.
 		privateKey, err = crypto.LoadECDSA(file)
 		if err != nil {
-			return nil, nil, "", errors.New(fmt.Sprintf("Can't load private key: %v", err))
+			return nil, nil, "", fmt.Errorf("Can't load private key: %w", err)
 		}
 	} else {
 		// If not loaded, generate random.
 		privateKey, err = crypto.GenerateKey()
 		if err != nil {
-			return nil, nil, "", errors.New(fmt.Sprintf("Failed to generate random private key: %v", err))
+			return nil, nil, "", fmt.Errorf("Failed to generate random private key: %w", err)
 		}
 	}
 
 	// Create the keyfile object with a random UUID.
 	UUID, err := uuid.NewRandom()
 	if err != nil {
-		return nil, nil, "", errors.New(fmt.Sprintf("Failed to generate random uuid: %v", err))
+		return nil, nil, "", fmt.Errorf("Failed to generate random uuid: %w", err)
 	}
 	key := &keystore.Key{
 		Id:         UUID,
@@ -106,7 +106,7 @@ func GenerateKeyFile(generateRandomPass bool, logger *logrus.Entry) ([]byte, *ke
 	}
 	keyjson, err := keystore.EncryptKey(key, passphrase, scryptN, scryptP)
 	if err != nil {
-		return nil, nil, "", errors.New(fmt.Sprintf("Error encrypting key: %v", err))
+		return nil, nil, "", fmt.Errorf("Error encrypting key: %w", err)
 	}
 
 	return keyjson, key, passphrase, nil

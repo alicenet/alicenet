@@ -9,6 +9,7 @@ import (
 )
 
 func rclaimsEqual(t *testing.T, rclaims, rclaims2 *RClaims) {
+	t.Helper()
 	if rclaims.ChainID != rclaims2.ChainID {
 		t.Fatal("fail")
 	}

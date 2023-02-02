@@ -101,10 +101,6 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with:
-          go-version-file: ./go.mod
-          cache: true
       - uses: golangci/golangci-lint-action@v3
 
   go-unit-tests:
@@ -117,12 +113,12 @@ jobs:
       - uses: ./.github/actions/alicenet-config
       - run: go build ./...
       - name: Set up gotestfmt
-        run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
+        run: go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt
       - name: Run unit tests
         timeout-minutes: 20
         run: |
           set -euo pipefail
-          go test -race -json -covermode=atomic -coverpkg ./... -coverprofile=coverage.out ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
+          go test -race -json -covermode=atomic -coverpkg ./... -coverprofile=coverage.out ./... 2>&1 | tee /tmp/gotest.log | gotestfmt -hide all
       - uses: codecov/codecov-action@v3
         with:
           files: ./coverage.out
@@ -155,8 +151,8 @@ jobs:
             # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingGPKjTask_Group_1,
             # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestGPKjDispute,
             # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestCompletion_Group_1,
-            github.com/alicenet/alicenet/layer1/ethereum/tests,
-            github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state,
+            github.com/alicenet/alicenet/layer1/evm/tests,
+            github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/dkg/state,
           ]
     steps:
       - uses: actions/checkout@v3
@@ -169,7 +165,7 @@ jobs:
       - run: npm --prefix bridge/ run compile
       - uses: ./.github/actions/alicenet-config
       - name: Set up gotestfmt
-        run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
+        run: go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt
       - name: Run tests ${{ matrix.test-cmd }}
         timeout-minutes: 45
         env:
@@ -177,7 +173,7 @@ jobs:
         run: |
           set -euo pipefail
           ./scripts/main.sh init 5
-          go test -tags=integration -race -json -covermode=atomic -coverpkg ./... -coverprofile=coverage.out -timeout=30m ${{ matrix.test-cmd }} 2>&1 | tee /tmp/gotest.log | gotestfmt
+          go test -tags=integration -race -json -covermode=atomic -coverpkg ./... -coverprofile=coverage.out -timeout=30m ${{ matrix.test-cmd }} 2>&1 | tee /tmp/gotest.log | gotestfmt -hide all
       - uses: codecov/codecov-action@v3
         with:
           files: ./coverage.out
@@ -201,7 +197,7 @@ jobs:
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
-      - uses: goreleaser/goreleaser-action@v3
+      - uses: goreleaser/goreleaser-action@v4
         with:
           args: release --snapshot --rm-dist
         env:

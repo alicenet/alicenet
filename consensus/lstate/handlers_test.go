@@ -870,6 +870,7 @@ func TestHandlers_AddBlockHeader_Ok(t *testing.T) {
 }
 
 func initHandlers(t *testing.T) *Handlers {
+	t.Helper()
 	rawHdlrsDb, err := utils.OpenBadger(context.Background().Done(), "", true)
 	if err != nil {
 		t.Fatal(err)

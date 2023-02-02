@@ -20,11 +20,10 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
 
     constructor(uint256 chainID_, uint256 epochLength_) SnapshotsStorage(chainID_, epochLength_) {}
 
-    function initialize(uint32 desperationDelay_, uint32 desperationFactor_)
-        public
-        onlyFactory
-        initializer
-    {
+    function initialize(
+        uint32 desperationDelay_,
+        uint32 desperationFactor_
+    ) public onlyFactory initializer {
         // considering that in optimum conditions 1 Sidechain block is at every 3 seconds and 1 block at
         // ethereum is approx at 13 seconds
         _minimumIntervalBetweenSnapshots = uint32(_epochLength / 4);
@@ -47,10 +46,9 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
 
     /// @notice Set minimum interval between snapshots in Ethereum blocks
     /// @param minimumIntervalBetweenSnapshots_ The interval in blocks
-    function setMinimumIntervalBetweenSnapshots(uint32 minimumIntervalBetweenSnapshots_)
-        public
-        onlyFactory
-    {
+    function setMinimumIntervalBetweenSnapshots(
+        uint32 minimumIntervalBetweenSnapshots_
+    ) public onlyFactory {
         _minimumIntervalBetweenSnapshots = minimumIntervalBetweenSnapshots_;
     }
 
@@ -58,10 +56,10 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     /// @param groupSignature_ The group signature used to sign the snapshots' block claims
     /// @param bClaims_ The claims being made about given block
     /// @return returns true if the execution succeeded
-    function snapshot(bytes calldata groupSignature_, bytes calldata bClaims_)
-        public
-        returns (bool)
-    {
+    function snapshot(
+        bytes calldata groupSignature_,
+        bytes calldata bClaims_
+    ) public returns (bool) {
         if (!IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender)) {
             revert SnapshotsErrors.OnlyValidatorsAllowed(msg.sender);
         }
@@ -117,11 +115,10 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     /// @param groupSignature_ Array of group signature used to sign the snapshots' block claims
     /// @param bClaims_ Array of BClaims being migrated as snapshots
     /// @return returns true if the execution succeeded
-    function migrateSnapshots(bytes[] memory groupSignature_, bytes[] memory bClaims_)
-        public
-        onlyFactory
-        returns (bool)
-    {
+    function migrateSnapshots(
+        bytes[] memory groupSignature_,
+        bytes[] memory bClaims_
+    ) public onlyFactory returns (bool) {
         Epoch storage epochReg = _epochRegister();
         {
             if (epochReg.get() != 0) {
@@ -220,11 +217,9 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     /// @param epoch_ The epoch of the snapshot
     /// @return The block claims
     /// This function will fail in case the user tries to get information of a snapshot older than 6 epochs from the current one
-    function getBlockClaimsFromSnapshot(uint256 epoch_)
-        public
-        view
-        returns (BClaimsParserLibrary.BClaims memory)
-    {
+    function getBlockClaimsFromSnapshot(
+        uint256 epoch_
+    ) public view returns (BClaimsParserLibrary.BClaims memory) {
         return _getSnapshot(uint32(epoch_)).blockClaims;
     }
 
@@ -287,11 +282,10 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         return _getEpochFromHeight(uint32(height));
     }
 
-    function checkBClaimsSignature(bytes calldata groupSignature_, bytes calldata bClaims_)
-        public
-        view
-        returns (bool)
-    {
+    function checkBClaimsSignature(
+        bytes calldata groupSignature_,
+        bytes calldata bClaims_
+    ) public view returns (bool) {
         // if the function does not revert, it means that the signature is valid
         _checkBClaimsSignature(groupSignature_, bClaims_);
         return true;
@@ -365,11 +359,10 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     /// @param epoch The epoch to be validated
     /// @param bClaims_ Encoded block claims
     /// @return blockClaims as struct if valid
-    function _parseAndValidateBClaims(uint32 epoch, bytes calldata bClaims_)
-        internal
-        view
-        returns (BClaimsParserLibrary.BClaims memory blockClaims)
-    {
+    function _parseAndValidateBClaims(
+        uint32 epoch,
+        bytes calldata bClaims_
+    ) internal view returns (BClaimsParserLibrary.BClaims memory blockClaims) {
         blockClaims = BClaimsParserLibrary.extractBClaims(bClaims_);
 
         if (epoch * _epochLength != blockClaims.height) {
@@ -385,11 +378,10 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     /// @param groupSignature_ The group signature
     /// @param bClaims_ The block claims to be checked
     /// @return signature validity
-    function _checkBClaimsSignature(bytes memory groupSignature_, bytes memory bClaims_)
-        internal
-        view
-        returns (uint256[4] memory, uint256[2] memory)
-    {
+    function _checkBClaimsSignature(
+        bytes memory groupSignature_,
+        bytes memory bClaims_
+    ) internal view returns (uint256[4] memory, uint256[2] memory) {
         (uint256[4] memory masterPublicKey, uint256[2] memory signature) = RCertParserLibrary
             .extractSigGroup(groupSignature_, 0);
 
@@ -440,15 +432,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         uint256 blocksSinceDesperation,
         bytes32 randomSeed,
         uint256 desperationFactor
-    )
-        internal
-        pure
-        returns (
-            bool,
-            uint256,
-            uint256
-        )
-    {
+    ) internal pure returns (bool, uint256, uint256) {
         uint256 numValidatorsAllowed = 1;
 
         uint256 desperation = 0;

@@ -108,6 +108,7 @@ func TestBClaimsBad(t *testing.T) {
 }
 
 func bclaimsEqual(t *testing.T, bclaims, bclaims2 *BClaims) {
+	t.Helper()
 	if bclaims.ChainID != bclaims2.ChainID {
 		t.Fatal("fail")
 	}

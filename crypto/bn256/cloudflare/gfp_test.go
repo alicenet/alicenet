@@ -113,6 +113,7 @@ func TestEcDc(t *testing.T) {
 
 // Test encoding and decoding for int64
 func ecDcInt64(t *testing.T, g int64) {
+	t.Helper()
 	gGFp := newGFp(g)
 	dec := newGFp(0)
 	montDecode(dec, gGFp)
@@ -133,6 +134,7 @@ func ecDcInt64(t *testing.T, g int64) {
 }
 
 func ecDcBig(t *testing.T, e uint, k uint) {
+	t.Helper()
 	bigVal := makeSpecialBig(e, k)
 	bigValGFpDec := bigToDecodedGFp(bigVal)
 	gfpVal := makeDecodedSpecialGFp(e, k)
@@ -281,6 +283,7 @@ func TestBigToGFp(t *testing.T) {
 }
 
 func bigToGFpInt64(t *testing.T, g int64) {
+	t.Helper()
 	bigG := big.NewInt(g)
 	btgG := bigToGFp(bigG)
 	gfpG := newGFp(g)
@@ -291,6 +294,7 @@ func bigToGFpInt64(t *testing.T, g int64) {
 }
 
 func bigToGFpOutside(t *testing.T, e uint, k uint) {
+	t.Helper()
 	bigVal := makeSpecialBig(e, k)
 	bigValGFp := bigToGFp(bigVal)
 	gfpVal := makeSpecialGFp(e, k)
@@ -337,6 +341,7 @@ func TestBasicArithmetic(t *testing.T) {
 }
 
 func addInt64(t *testing.T, k int64, j int64, h int64) {
+	t.Helper()
 	gfpK := newGFp(k)
 	gfpJ := newGFp(j)
 	gfpH := newGFp(h)
@@ -349,6 +354,7 @@ func addInt64(t *testing.T, k int64, j int64, h int64) {
 }
 
 func addOutside(t *testing.T, e uint, k uint, f uint, ell uint) {
+	t.Helper()
 	bigV1 := makeSpecialBig(e, k)
 	bigV2 := makeSpecialBig(f, ell)
 	bigRes := new(big.Int).Add(bigV1, bigV2)
@@ -364,6 +370,7 @@ func addOutside(t *testing.T, e uint, k uint, f uint, ell uint) {
 }
 
 func subInt64(t *testing.T, k int64, j int64, h int64) {
+	t.Helper()
 	gfpK := newGFp(k)
 	gfpJ := newGFp(j)
 	gfpH := newGFp(h)
@@ -376,6 +383,7 @@ func subInt64(t *testing.T, k int64, j int64, h int64) {
 }
 
 func subOutside(t *testing.T, e uint, k uint, f uint, ell uint) {
+	t.Helper()
 	bigV1 := makeSpecialBig(e, k)
 	bigV2 := makeSpecialBig(f, ell)
 	bigRes := new(big.Int).Sub(bigV1, bigV2)
@@ -391,6 +399,7 @@ func subOutside(t *testing.T, e uint, k uint, f uint, ell uint) {
 }
 
 func multiplyInt64(t *testing.T, k int64, j int64, h int64) {
+	t.Helper()
 	gfpK := newGFp(k)
 	gfpJ := newGFp(j)
 	gfpH := newGFp(h)
@@ -403,6 +412,7 @@ func multiplyInt64(t *testing.T, k int64, j int64, h int64) {
 }
 
 func multiplyOutside(t *testing.T, e uint, k uint, f uint, ell uint) {
+	t.Helper()
 	bigV1 := makeSpecialBig(e, k)
 	bigV2 := makeSpecialBig(f, ell)
 	bigRes := new(big.Int).Mul(bigV1, bigV2)
@@ -450,6 +460,7 @@ func TestInvert(t *testing.T) {
 }
 
 func invertInt64(t *testing.T, g int64) {
+	t.Helper()
 	gfpG := newGFp(g)
 	gfpRes := newGFp(0)
 	gfpProd := newGFp(0)
@@ -463,6 +474,7 @@ func invertInt64(t *testing.T, g int64) {
 }
 
 func invertOutside(t *testing.T, e uint, k uint) {
+	t.Helper()
 	gfpOne := newGFp(1)
 	bigVal := makeSpecialBig(e, k)
 	gfpVal := makeSpecialGFp(e, k)
@@ -500,6 +512,7 @@ func TestLegendreGFP(t *testing.T) {
 }
 
 func legendreGFPInt64(t *testing.T, g int64) {
+	t.Helper()
 	bigG := big.NewInt(g)
 	gfpG := newGFp(g)
 
@@ -512,6 +525,7 @@ func legendreGFPInt64(t *testing.T, g int64) {
 }
 
 func legendreGFPOutside(t *testing.T, e uint, k uint) {
+	t.Helper()
 	bigVal := makeSpecialBig(e, k)
 	gfpVal := makeSpecialGFp(e, k)
 	gfpLeg := gfpVal.Legendre()
@@ -544,6 +558,7 @@ func TestSqrtGFP(t *testing.T) {
 }
 
 func sqrtGFPInt64(t *testing.T, g int64) {
+	t.Helper()
 	gfpG := newGFp(g)
 	if gfpG.Legendre() != 1 {
 		// No square root exists; exit
@@ -559,6 +574,7 @@ func sqrtGFPInt64(t *testing.T, g int64) {
 }
 
 func sqrtGFPOutside(t *testing.T, e uint, k uint) {
+	t.Helper()
 	bigVal := makeSpecialBig(e, k)
 	gfpVal := makeSpecialGFp(e, k)
 	if gfpVal.Legendre() != 1 {
@@ -594,6 +610,7 @@ func TestExponentiation(t *testing.T) {
 }
 
 func exponentiationInt64(t *testing.T, g int64) {
+	t.Helper()
 	var k uint
 	gfpG := newGFp(g)
 	gfpRes := newGFp(0)
@@ -615,6 +632,7 @@ func exponentiationInt64(t *testing.T, g int64) {
 }
 
 func exponentiationOutside(t *testing.T, e uint, k uint) {
+	t.Helper()
 	var j uint
 	bigVal := makeSpecialBig(e, k)
 	gfpVal := makeSpecialGFp(e, k)
@@ -706,13 +724,14 @@ func TestIsEqualGFP(t *testing.T) {
 
 func TestMarshalGFP(t *testing.T) {
 	for _, k := range []int{-1, 0, 1} {
-		gfpMarshalTest(k, t)
+		gfpMarshalTest(t, k)
 	}
 	gfpMarshalTestExceed(t)
 	gfpMarshalTestEqual(t)
 }
 
-func gfpMarshalTest(k int, t *testing.T) {
+func gfpMarshalTest(t *testing.T, k int) {
+	t.Helper()
 	gfpK := newGFp(int64(k))
 	retK := make([]byte, numBytes)
 	gfpK.Marshal(retK)
@@ -728,6 +747,7 @@ func gfpMarshalTest(k int, t *testing.T) {
 }
 
 func gfpMarshalTestExceed(t *testing.T) {
+	t.Helper()
 	breakBytesExceedGFp := &gfP{}
 	breakBytesExceed := make([]byte, numBytes)
 	breakBytesExceed[0] = byte(255) // >= 49 will work
@@ -742,6 +762,7 @@ func gfpMarshalTestEqual(t *testing.T) {
 	// this can be computed by starting with p2[3] and taking the largest byte
 	// (that is, the top 2 hex digits) and working down the uint64 before heading
 	// to p2[2] and down.
+	t.Helper()
 	breakGFp := &gfP{}
 	breakBytes := make([]byte, numBytes)
 

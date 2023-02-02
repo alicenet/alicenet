@@ -1,9 +1,7 @@
 package gossip
 
 import (
-	"io/ioutil"
 	"math/big"
-	"os"
 	"testing"
 
 	"github.com/dgraph-io/badger/v2"
@@ -26,16 +24,7 @@ func TestState(t *testing.T) {
 	if len(secpPubks) != len(bnShares) {
 		t.Fatal("key length mismatch")
 	}
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
+	opts := badger.DefaultOptions(t.TempDir())
 	DB, err := badger.Open(opts)
 	if err != nil {
 		t.Fatal(err)
@@ -119,6 +108,7 @@ func makeSecpSigner(seed []byte) (*crypto.Secp256k1Signer, []byte) {
 }
 
 func buildRound(t *testing.T, bnSigners []*crypto.BNGroupSigner, groupSharesOrig [][]byte, secpSigners []*crypto.Secp256k1Signer, height, round uint32, prevBlockOrig []byte) (*objs.BlockHeader, []*objs.Proposal, objs.PreVoteList, []*objs.PreVoteNil, objs.PreCommitList, []*objs.PreCommitNil, objs.NextRoundList, objs.NextHeightList, *objs.BlockHeader) {
+	t.Helper()
 	groupShares := make([][]byte, len(groupSharesOrig))
 	copy(groupShares, groupSharesOrig)
 	prevBlock := utils.CopySlice(prevBlockOrig)
@@ -443,6 +433,7 @@ func makeRoundState(secpKeyOrig, groupShareOrig, groupkOrig []byte, idx int, rce
 }
 
 func makeSigners(t *testing.T) ([]byte, []*crypto.BNGroupSigner, [][]byte, []*crypto.Secp256k1Signer, [][]byte) {
+	t.Helper()
 	s := new(crypto.BNGroupSigner)
 	msg := []byte("A message to sign")
 

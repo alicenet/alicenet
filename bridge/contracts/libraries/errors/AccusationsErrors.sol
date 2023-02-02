@@ -28,4 +28,6 @@ library AccusationsErrors {
     error PClaimsAreEqual();
     error SignatureLengthMustBe65Bytes(uint256 signatureLength);
     error InvalidSignatureVersion(uint8 signatureVersion);
+    error ExpiredAccusation(uint256 accusationHeight, uint256 latestSnapshotHeight, uint256 epoch);
+    error InvalidMasterPublicKey(bytes32 signature);
 }

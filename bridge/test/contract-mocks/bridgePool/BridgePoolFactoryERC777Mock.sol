@@ -4,8 +4,6 @@ pragma solidity ^0.8.16;
 import "contracts/libraries/errors/BridgePoolFactoryErrors.sol";
 import "test/contract-mocks/bridgePool/BridgePoolFactoryBaseERC777Mock.sol";
 
-/// @custom:salt BridgePoolFactory
-/// @custom:deploy-type deployUpgradeable
 contract BridgePoolFactoryERC777Mock is BridgePoolFactoryBaseERC777Mock {
     constructor() BridgePoolFactoryBaseERC777Mock() {}
 
@@ -52,11 +50,9 @@ contract BridgePoolFactoryERC777Mock is BridgePoolFactoryBaseERC777Mock {
      * @param bridgePoolSalt_ bytes32 salt associated with the pool, calculated with getBridgePoolSalt
      * @return poolAddress calculated calculated bridgePool Address
      */
-    function lookupBridgePoolAddress(bytes32 bridgePoolSalt_)
-        public
-        view
-        returns (address poolAddress)
-    {
+    function lookupBridgePoolAddress(
+        bytes32 bridgePoolSalt_
+    ) public view returns (address poolAddress) {
         poolAddress = BridgePoolAddressUtil.getBridgePoolAddress(bridgePoolSalt_, address(this));
     }
 

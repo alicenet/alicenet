@@ -6,28 +6,28 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
+	"testing"
+	"time"
+
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
-	"github.com/alicenet/alicenet/layer1/monitor/events"
+	"github.com/alicenet/alicenet/layer1/chains/ethereum/events"
+	ethdkgState "github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/dkg/state"
+	snapshotState "github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/snapshots/state"
+	"github.com/alicenet/alicenet/layer1/executor"
+	"github.com/alicenet/alicenet/layer1/monitor/objects"
+	"github.com/alicenet/alicenet/layer1/transaction"
+	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
-	"math/big"
-	"testing"
-	"time"
-
-	"github.com/alicenet/alicenet/layer1/executor"
-	ethdkgState "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	snapshotState "github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
-	"github.com/alicenet/alicenet/layer1/monitor/objects"
-	"github.com/alicenet/alicenet/layer1/transaction"
-	"github.com/alicenet/alicenet/test/mocks"
 )
 
 func createSharedKey(addr common.Address) [4]*big.Int {
@@ -54,7 +54,12 @@ func populateMonitor(monitorState *objects.MonitorState, EPOCH uint32) {
 	monitorState.ValidatorSets[EPOCH] = objects.ValidatorSet{
 		ValidatorCount:          4,
 		NotBeforeAliceNetHeight: 321,
-		GroupKey:                [4]*big.Int{big.NewInt(3), big.NewInt(2), big.NewInt(1), big.NewInt(5)},
+		GroupKey: [4]*big.Int{
+			big.NewInt(3),
+			big.NewInt(2),
+			big.NewInt(1),
+			big.NewInt(5),
+		},
 	}
 
 	monitorState.Validators[EPOCH] = []objects.Validator{
@@ -65,23 +70,28 @@ func populateMonitor(monitorState *objects.MonitorState, EPOCH uint32) {
 	}
 }
 
-func getMonitor(t *testing.T) (*monitor, executor.TaskHandler, *mocks.MockClient, *mocks.MockEthereumContracts, accounts.Account) {
+func getMonitor(
+	t *testing.T,
+) (*monitor, executor.TaskHandler, *mocks.MockClient, *mocks.MockEthereumContracts, accounts.Account) {
+	t.Helper()
 	monDB := mocks.NewTestDB()
 	consDB := mocks.NewTestDB()
 	adminHandler := mocks.NewMockAdminHandler()
-	adminHandler.AddSnapshotFunc.SetDefaultHook(func(bh *objs.BlockHeader, safeToProceedConsensus bool) error {
-		err := consDB.Update(func(txn *badger.Txn) error {
-			err := consDB.SetSnapshotBlockHeader(txn, bh)
+	adminHandler.AddSnapshotFunc.SetDefaultHook(
+		func(bh *objs.BlockHeader, safeToProceedConsensus bool) error {
+			err := consDB.Update(func(txn *badger.Txn) error {
+				err := consDB.SetSnapshotBlockHeader(txn, bh)
+				if err != nil {
+					return err
+				}
+				return nil
+			})
 			if err != nil {
-				return err
+				panic(err)
 			}
 			return nil
-		})
-		if err != nil {
-			panic(err)
-		}
-		return nil
-	})
+		},
+	)
 	depositHandler := mocks.NewMockDepositHandler()
 	eth := mocks.NewMockClient()
 	txWatcher := transaction.NewWatcher(eth, 12, monDB, false, constants.TxPollingTime)
@@ -114,7 +124,20 @@ func getMonitor(t *testing.T) (*monitor, executor.TaskHandler, *mocks.MockClient
 	contracts.EthereumContractsFunc.SetDefaultReturn(ethereumContracts)
 
 	tasksHandler, err := executor.NewTaskHandler(monDB, eth, contracts, adminHandler, txWatcher)
-	mon, err := NewMonitor(consDB, monDB, adminHandler, depositHandler, eth, contracts, contracts.EthereumContracts().GetAllAddresses(), 2*time.Second, 100, 42, tasksHandler)
+	assert.Nil(t, err)
+	mon, err := NewMonitor(
+		consDB,
+		monDB,
+		adminHandler,
+		depositHandler,
+		eth,
+		contracts,
+		contracts.EthereumContracts().GetAllAddresses(),
+		2*time.Second,
+		100,
+		42,
+		tasksHandler,
+	)
 	assert.Nil(t, err)
 	EPOCH := uint32(1)
 	populateMonitor(mon.State, EPOCH)
@@ -139,7 +162,19 @@ func TestMonitorPersist(t *testing.T) {
 	err = mon.State.PersistState(mon.db)
 	assert.Nil(t, err)
 
-	newMon, err := NewMonitor(mon.db, mon.db, mocks.NewMockAdminHandler(), mocks.NewMockDepositHandler(), eth, mon.contracts, mon.contracts.EthereumContracts().GetAllAddresses(), 10*time.Millisecond, 100, 42, taskHandler)
+	newMon, err := NewMonitor(
+		mon.db,
+		mon.db,
+		mocks.NewMockAdminHandler(),
+		mocks.NewMockDepositHandler(),
+		eth,
+		mon.contracts,
+		mon.contracts.EthereumContracts().GetAllAddresses(),
+		10*time.Millisecond,
+		100,
+		42,
+		taskHandler,
+	)
 	assert.Nil(t, err)
 
 	err = newMon.State.LoadState(mon.db)
@@ -239,7 +274,11 @@ func TestProcessNewAliceNetNodeVersionAvailableEvent(t *testing.T) {
 			assert.Equal(t, version.Version.Major, monState.CanonicalVersion.Major)
 			assert.Equal(t, version.Version.Minor, monState.CanonicalVersion.Minor)
 			assert.Equal(t, version.Version.Patch, monState.CanonicalVersion.Patch)
-			assert.Equal(t, version.Version.ExecutionEpoch, monState.CanonicalVersion.ExecutionEpoch)
+			assert.Equal(
+				t,
+				version.Version.ExecutionEpoch,
+				monState.CanonicalVersion.ExecutionEpoch,
+			)
 			break
 		}
 
@@ -383,6 +422,7 @@ func TestPersistSnapshot(t *testing.T) {
 		SigGroup: make([]byte, 192),
 	}
 	err := PersistSnapshot(eth, bh, 10, 1, taskHandler, mon.db)
+	assert.Nil(t, err)
 
 	state, err := snapshotState.GetSnapshotState(mon.db)
 	assert.Nil(t, err)

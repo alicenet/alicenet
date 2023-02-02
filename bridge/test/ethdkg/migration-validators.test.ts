@@ -51,7 +51,7 @@ describe("Ethdkg: Migrate state", () => {
       await loadFixture(deployFixture));
   });
 
-  it("Should not be to do a migration of validators if not factory", async function () {
+  it("Should not be to do a migration of validators if not factory [ @skip-on-coverage ]", async function () {
     await expect(
       fixture.ethdkg.migrateValidators(
         validatorsAddress,
@@ -64,11 +64,11 @@ describe("Ethdkg: Migrate state", () => {
         validatorsSnapshots[0].mpk
       )
     )
-      .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+      .to.be.revertedWithCustomError(fixture.alcb, `OnlyFactory`)
       .withArgs(admin.address, fixture.factory.address);
   });
 
-  it("Should not be to do a migration with mismatch state length", async function () {
+  it("Should not be to do a migration with mismatch state length [ @skip-on-coverage ]", async function () {
     const validatorIndexes = [1, 2, 3];
     await expect(
       factoryCallAny(fixture.factory, fixture.ethdkg, "migrateValidators", [
@@ -128,7 +128,14 @@ describe("Ethdkg: Migrate state", () => {
       .withArgs(3, correctValidatorIndexes.length, validatorsShares.length);
   });
 
-  it("Factory should be able to migrate validators", async function () {
+  it("Factory should be able to migrate validators [ @skip-on-coverage ]", async function () {
+    const expectedHash = ethers.utils.solidityKeccak256(
+      ["uint256", "uint256", "uint256", "uint256"],
+      [...validatorsSnapshots[0].mpk]
+    );
+    expect(
+      await fixture.ethdkg.isValidMasterPublicKey(expectedHash)
+    ).to.be.equal(false);
     const receipt = await factoryCallAny(
       fixture.factory,
       fixture.ethdkg,
@@ -145,9 +152,15 @@ describe("Ethdkg: Migrate state", () => {
       ]
     );
     expect(receipt.status).to.be.equals(1);
+    expect(await fixture.ethdkg.getMasterPublicKeyHash()).to.be.equal(
+      expectedHash
+    );
+    expect(
+      await fixture.ethdkg.isValidMasterPublicKey(expectedHash)
+    ).to.be.equal(true);
   });
 
-  it("Should not be able to run ethdkg after migration without scheduling maintenance", async function () {
+  it("Should not be able to run ethdkg after migration without scheduling maintenance [ @skip-on-coverage ]", async function () {
     const validators = await createValidators(fixture, validatorsSnapshots);
     const stakingTokenIds = await stakeValidators(fixture, validators);
     await factoryCallAnyFixture(
@@ -183,7 +196,7 @@ describe("Ethdkg: Migrate state", () => {
     ).to.be.revertedWithCustomError(fixture.validatorPool, "ConsensusRunning");
   });
 
-  it("Should not be able to run more than 1 migration", async function () {
+  it("Should not be able to run more than 1 migration [ @skip-on-coverage ]", async function () {
     const validators = await createValidators(fixture, validatorsSnapshots);
     const stakingTokenIds = await stakeValidators(fixture, validators);
     await factoryCallAnyFixture(
@@ -233,7 +246,7 @@ describe("Ethdkg: Migrate state", () => {
       .withArgs(1);
   });
 
-  it("Change validators after migration with scheduling maintenance + snapshots", async function () {
+  it("Change validators after migration with scheduling maintenance + snapshots [ @skip-on-coverage ]", async function () {
     const validators = await createValidators(fixture, validatorsSnapshots2);
     const stakingTokenIds = await stakeValidators(fixture, validators);
     validatorsAddress = [];
@@ -248,6 +261,14 @@ describe("Ethdkg: Migrate state", () => {
       "registerValidators",
       [validators, stakingTokenIds]
     );
+
+    const expectedHash = ethers.utils.solidityKeccak256(
+      ["uint256", "uint256", "uint256", "uint256"],
+      [...validatorsSnapshots2[0].mpk]
+    );
+    expect(
+      await fixture.ethdkg.isValidMasterPublicKey(expectedHash)
+    ).to.be.equal(false);
 
     let receipt = await factoryCallAny(
       fixture.factory,
@@ -265,6 +286,10 @@ describe("Ethdkg: Migrate state", () => {
       ]
     );
     expect(receipt.status).to.be.equals(1);
+
+    expect(
+      await fixture.ethdkg.isValidMasterPublicKey(expectedHash)
+    ).to.be.equal(true);
 
     // migrating snapshots as well
     receipt = await factoryCallAny(
@@ -322,6 +347,14 @@ describe("Ethdkg: Migrate state", () => {
       [newValidators, newStakingTokenIds]
     );
     await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
+    const expectedHash2 = ethers.utils.solidityKeccak256(
+      ["uint256", "uint256", "uint256", "uint256"],
+      [...validatorsSnapshots[0].mpk]
+    );
+    expect(
+      await fixture.ethdkg.isValidMasterPublicKey(expectedHash2)
+    ).to.be.equal(false);
+
     await completeETHDKGRound(
       validatorsSnapshots,
       {
@@ -334,6 +367,11 @@ describe("Ethdkg: Migrate state", () => {
         await fixture.snapshots.getCommittedHeightFromLatestSnapshot()
       ).toNumber()
     );
+
+    expect(
+      await fixture.ethdkg.isValidMasterPublicKey(expectedHash2)
+    ).to.be.equal(true);
+
     await mineBlocks(
       (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
     );
@@ -376,7 +414,7 @@ describe("Ethdkg: Migrate state", () => {
       );
   });
 
-  it("Run ethdkg with same validators after migration with scheduling maintenance + snapshots", async function () {
+  it("Run ethdkg with same validators after migration with scheduling maintenance + snapshots [ @skip-on-coverage ]", async function () {
     const validators = await createValidators(fixture, validatorsSnapshots);
     const stakingTokenIds = await stakeValidators(fixture, validators);
     await factoryCallAnyFixture(

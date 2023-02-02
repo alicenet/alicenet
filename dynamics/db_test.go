@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/alicenet/alicenet/consensus/db"
@@ -16,7 +16,7 @@ import (
 )
 
 func NewTestRawDB() *badger.DB {
-	logging.GetLogger(constants.LoggerBadger).SetOutput(ioutil.Discard)
+	logging.GetLogger(constants.LoggerBadger).SetOutput(io.Discard)
 	db, err := utils.OpenBadger(context.Background().Done(), "", true)
 	if err != nil {
 		panic(err)
@@ -37,7 +37,7 @@ func TestMock(t *testing.T) {
 
 	m := NewTestDB()
 
-	m.DB().Update(func(txn *badger.Txn) error {
+	err := m.DB().Update(func(txn *badger.Txn) error {
 		_, err := m.GetValue(txn, key)
 		if !errors.Is(err, ErrKeyNotPresent) {
 			t.Fatalf("should have failed: %v", err)
@@ -57,6 +57,9 @@ func TestMock(t *testing.T) {
 		}
 		return nil
 	})
+	if err != nil {
+		t.Fatal("unable to complete test")
+	}
 
 }
 
@@ -78,7 +81,7 @@ func TestGetSetNode(t *testing.T) {
 	db := initializeDB()
 
 	node := &Node{}
-	db.rawDB.Update(func(txn *badger.Txn) error {
+	err := db.rawDB.Update(func(txn *badger.Txn) error {
 		err := db.SetNode(txn, node)
 		if err == nil {
 			t.Fatal("Should have raised error (1)")
@@ -117,6 +120,9 @@ func TestGetSetNode(t *testing.T) {
 		}
 		return nil
 	})
+	if err != nil {
+		t.Fatal("unable to complete test")
+	}
 }
 
 func TestGetSetLinkedList(t *testing.T) {
@@ -124,7 +130,7 @@ func TestGetSetLinkedList(t *testing.T) {
 	db := initializeDB()
 
 	ll := &LinkedList{}
-	db.rawDB.Update(func(txn *badger.Txn) error {
+	err := db.rawDB.Update(func(txn *badger.Txn) error {
 		err := db.SetLinkedList(txn, ll)
 		if err == nil {
 			t.Fatal("Should have raised error (1)")
@@ -148,4 +154,7 @@ func TestGetSetLinkedList(t *testing.T) {
 		}
 		return nil
 	})
+	if err != nil {
+		t.Fatal("unable to complete test")
+	}
 }

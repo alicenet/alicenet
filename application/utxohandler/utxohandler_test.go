@@ -1,8 +1,6 @@
 package utxohandler
 
 import (
-	"io/ioutil"
-	"os"
 	"strconv"
 	"testing"
 
@@ -16,6 +14,7 @@ import (
 )
 
 func makeDeposit(t *testing.T, s objs.Signer, chainID uint32, i int, value *uint256.Uint256) *objs.ValueStore {
+	t.Helper()
 	pubkey, err := s.Pubkey()
 	if err != nil {
 		t.Fatal(err)
@@ -33,6 +32,7 @@ func makeDeposit(t *testing.T, s objs.Signer, chainID uint32, i int, value *uint
 }
 
 func makeTxs(t *testing.T, s objs.Signer, v *objs.ValueStore) *objs.Tx {
+	t.Helper()
 	txIn, err := v.MakeTxIn()
 	if err != nil {
 		t.Fatal(err)
@@ -80,16 +80,7 @@ func makeTxs(t *testing.T, s objs.Signer, v *objs.ValueStore) *objs.Tx {
 }
 
 func TestUTXOTrie(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
+	opts := badger.DefaultOptions(t.TempDir())
 	db, err := badger.Open(opts)
 	if err != nil {
 		t.Fatal(err)

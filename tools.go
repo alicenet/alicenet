@@ -14,6 +14,7 @@ import (
 	_ "github.com/derision-test/go-mockgen/cmd/go-mockgen"
 	_ "github.com/ethereum/go-ethereum/cmd/abigen"
 	_ "github.com/ethereum/go-ethereum/cmd/geth"
+	_ "github.com/gotesttools/gotestfmt/v2"
 	_ "github.com/vburenin/ifacemaker"
 	_ "golang.org/x/tools/cmd/goimports"
 )

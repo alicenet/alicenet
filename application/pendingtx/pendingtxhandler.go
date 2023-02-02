@@ -194,7 +194,7 @@ func (pt *Handler) DeleteMined(txnState *badger.Txn, currentHeight uint32, txHas
 }
 
 // GetTxsForProposal returns an set of txs that are mutually exclusive with
-// respect to the consumed UTXOs. This is used to genrete new proposals.
+// respect to the consumed UTXOs. This is used to generate new proposals.
 func (pt *Handler) GetTxsForProposal(txnState *badger.Txn, ctx context.Context, currentHeight, maxBytes uint32, tx *objs.Tx) (objs.TxVec, uint32, error) {
 	var utxos objs.TxVec
 	var err error
@@ -222,6 +222,8 @@ func (pt *Handler) GetTxsForGossip(txnState *badger.Txn, ctx context.Context, cu
 /////////PRIVATE METHODS////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+// getTxsInteral gets txs from the pending tx pool by iterating from oldest to most recent;
+// conflicting txs (txs which consume the same UTXOs or deposits) may or may not be allowed.
 func (pt *Handler) getTxsInternal(txnState *badger.Txn, ctx context.Context, currentHeight, maxBytes uint32, tx *objs.Tx, allowConflict bool) ([]*objs.Tx, uint32, error) {
 	txs := objs.TxVec{}
 	if tx != nil {
@@ -333,6 +335,7 @@ func (pt *Handler) checkSize(maxBytes, byteCount uint32) bool {
 	return byteCount+constants.HashLen <= maxBytes
 }
 
+// checkTx checks if tx is valid by performing a number of checks
 func (pt *Handler) checkTx(txnState *badger.Txn, tx *objs.Tx, currentHeight uint32) (bool, error) {
 	ok, err := pt.checkGenerated(txnState, tx)
 	if err != nil {
@@ -366,6 +369,7 @@ func (pt *Handler) checkTx(txnState *badger.Txn, tx *objs.Tx, currentHeight uint
 	return true, nil
 }
 
+// checkGenerated checks if generated UTXOs from tx are valid (no other object with same utxoID exists)
 func (pt *Handler) checkGenerated(txnState *badger.Txn, tx *objs.Tx) (bool, error) {
 	generatedUTXOIDs, err := tx.GeneratedUTXOID()
 	if err != nil {
@@ -386,6 +390,7 @@ func (pt *Handler) checkGenerated(txnState *badger.Txn, tx *objs.Tx) (bool, erro
 	return true, nil
 }
 
+// checkConsumedUTXOs checks if consumed UTXOs within tx are valid (have not been consumed)
 func (pt *Handler) checkConsumedUTXOs(txnState *badger.Txn, tx *objs.Tx) (bool, error) {
 	txv := objs.TxVec{tx}
 	consumedUTXOIDs, err := txv.ConsumedUTXOIDNoDeposits()
@@ -407,6 +412,7 @@ func (pt *Handler) checkConsumedUTXOs(txnState *badger.Txn, tx *objs.Tx) (bool, 
 	return true, nil
 }
 
+// checkConsumedDeposits checks if deposits within tx are valid (have not been spent)
 func (pt *Handler) checkConsumedDeposits(txnState *badger.Txn, tx *objs.Tx) (bool, error) {
 	consumedUTXOIDs, err := objs.TxVec([]*objs.Tx{tx}).ConsumedUTXOIDOnlyDeposits()
 	if err != nil {
@@ -426,6 +432,7 @@ func (pt *Handler) checkConsumedDeposits(txnState *badger.Txn, tx *objs.Tx) (boo
 	return true, nil
 }
 
+// checkIsValid checks if txs are valid
 func (pt *Handler) checkIsValid(txn *badger.Txn, txs objs.TxVec, currentHeight uint32) error {
 	utxoIDs, err := txs.ConsumedUTXOIDOnlyDeposits()
 	if err != nil {
@@ -453,6 +460,7 @@ func (pt *Handler) checkIsValid(txn *badger.Txn, txs objs.TxVec, currentHeight u
 	return nil
 }
 
+// getOneInternal returns tx from pending tx pool
 func (pt *Handler) getOneInternal(txn *badger.Txn, epoch uint32, txHash []byte) (*objs.Tx, error) {
 	expEpoch, err := pt.indexer.GetEpoch(txn, txHash)
 	if err != nil {
@@ -479,6 +487,7 @@ func (pt *Handler) getOneInternal(txn *badger.Txn, epoch uint32, txHash []byte) 
 	return tx, nil
 }
 
+// addOneInternal adds tx to pending tx pool
 func (pt *Handler) addOneInternal(txn *badger.Txn, tx *objs.Tx, expEpoch uint32, txHash []byte, utxoIDs [][]byte) error {
 	contains, err := pt.containsOneInternal(txn, expEpoch, txHash)
 	if err != nil {
@@ -508,6 +517,7 @@ func (pt *Handler) addOneInternal(txn *badger.Txn, tx *objs.Tx, expEpoch uint32,
 	return nil
 }
 
+// deleteOneInternal deletes tx from pending tx pool
 func (pt *Handler) deleteOneInternal(txn *badger.Txn, txHash []byte, minedDelete bool) error {
 	if minedDelete {
 		txHashes, _, err := pt.indexer.DeleteMined(txn, txHash)
@@ -546,6 +556,7 @@ func (pt *Handler) deleteOneInternal(txn *badger.Txn, txHash []byte, minedDelete
 	return nil
 }
 
+// containsOneInteral checks if tx is included in pending tx pool
 func (pt *Handler) containsOneInternal(txn *badger.Txn, epoch uint32, txHash []byte) (bool, error) {
 	_, err := pt.getOneInternal(txn, epoch, txHash)
 	if err != nil {

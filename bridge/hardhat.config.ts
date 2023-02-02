@@ -3,21 +3,31 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-truffle5";
 import "@typechain/hardhat";
+import fs from "fs";
 import "hardhat-abi-exporter";
 import "hardhat-contract-sizer";
 import "hardhat-deploy";
 import "hardhat-gas-reporter";
 import "hardhat-log-remover";
+import "hardhat-preprocessor";
 import "hardhat-storage-layout";
 import "hardhat/config";
 import { HardhatUserConfig, task } from "hardhat/config";
 import os from "os";
 import "solidity-coverage";
-import "./scripts/generateImmutableAuth";
-import "./scripts/lib/alicenetFactoryTasks";
-import "./scripts/lib/alicenetTasks";
-import "./scripts/lib/gogogen";
+import "./scripts/tasks/alicenetFactoryTasks";
+import "./scripts/tasks/alicenetTasks";
+import "./scripts/tasks/generateImmutableAuth";
+import "./scripts/tasks/gogogen";
 require("dotenv").config();
+
+function getRemappings() {
+  return fs
+    .readFileSync("remappings.txt", "utf8")
+    .split("\n")
+    .filter(Boolean) // remove empty lines
+    .map((line) => line.trim().split("="));
+}
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -106,23 +116,14 @@ const config: HardhatUserConfig = {
           : "0x0000000000000000000000000000000000000000000000000000000000000000",
       ],
     },
-    production: {
-      url: "https://eth.alice.net/",
-      gas: 15000000,
-      gasMultiplier: 2,
-      gasPrice: "auto",
-      accounts: [
-        process.env.PROD_PK
-          ? process.env.PROD_PK
-          : "0x0000000000000000000000000000000000000000000000000000000000000000",
-      ],
-    },
-    ganache: {
-      url: "http://127.0.0.1:8545",
-    },
     hardhat: {
       chainId: 1337,
       allowUnlimitedContractSize: false,
+      // forking: {
+      //   url: process.env.ALCHEMY_ENDPOINT_ETH
+      //     ? process.env.ALCHEMY_ENDPOINT_ETH
+      //     : "",
+      // },
       mining: {
         auto: true,
         interval: 0,
@@ -260,7 +261,21 @@ const config: HardhatUserConfig = {
       },
     ],
   },
-
+  preprocess: {
+    eachLine: (hre) => ({
+      transform: (line: string) => {
+        if (line.match(/^\s*import /i)) {
+          for (const [from, to] of getRemappings()) {
+            if (line.includes(from)) {
+              line = line.replace(from, to);
+              break;
+            }
+          }
+        }
+        return line;
+      },
+    }),
+  },
   paths: {
     sources: "./contracts",
     tests: "./test",
@@ -296,8 +311,8 @@ const config: HardhatUserConfig = {
       "ETHDKG",
       "ValidatorPool",
       "Snapshots",
-      "BToken",
-      "AToken",
+      "ALCB",
+      "ALCA",
       "PublicStaking",
       "ValidatorStaking",
       "Governance",

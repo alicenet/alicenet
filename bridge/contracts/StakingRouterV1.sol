@@ -9,15 +9,18 @@ import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/interfaces/IStakingToken.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutablePublicStaking.sol";
+import "contracts/utils/auth/ImmutableALCA.sol";
 import "contracts/Lockup.sol";
 
-/// @custom:deploy-type deployCreate
+/// @custom:salt StakingRouterV1
+/// @custom:deploy-type deployCreateAndRegister
 /// @custom:deploy-group lockup
 /// @custom:deploy-group-index 1
 contract StakingRouterV1 is
     ImmutablePublicStaking,
-    ImmutableAToken,
+    ImmutableALCA,
     ERC20SafeTransfer,
     EthSafeTransfer
 {
@@ -28,8 +31,8 @@ contract StakingRouterV1 is
     address internal immutable _legacyToken;
     address internal immutable _lockupContract;
 
-    constructor() ImmutableFactory(msg.sender) ImmutablePublicStaking() ImmutableAToken() {
-        _legacyToken = IStakingToken(_aTokenAddress()).getLegacyTokenAddress();
+    constructor() ImmutableFactory(msg.sender) ImmutablePublicStaking() ImmutableALCA() {
+        _legacyToken = IStakingToken(_alcaAddress()).getLegacyTokenAddress();
         _lockupContract = IAliceNetFactory(_factoryAddress()).lookup(_LOCKUP_SALT);
     }
 
@@ -39,11 +42,7 @@ contract StakingRouterV1 is
     /// @param to_ the address that will own the position
     /// @param migrationAmount_ the amount of legacy token to migrate
     /// @param stakingAmount_ the amount of ALCA that will staked and locked
-    function migrateAndStake(
-        address to_,
-        uint256 migrationAmount_,
-        uint256 stakingAmount_
-    ) public {
+    function migrateAndStake(address to_, uint256 migrationAmount_, uint256 stakingAmount_) public {
         uint256 migratedAmount = _migrate(msg.sender, migrationAmount_);
         _verifyAndSendAnyRemainder(to_, migratedAmount, stakingAmount_);
         _stake(to_, stakingAmount_);
@@ -74,7 +73,7 @@ contract StakingRouterV1 is
     /// @param to_ the address that will own the locked position
     /// @param stakingAmount_ the amount of ALCA that will staked
     function stakeAndLock(address to_, uint256 stakingAmount_) public {
-        _safeTransferFromERC20(IERC20Transferable(_aTokenAddress()), msg.sender, stakingAmount_);
+        _safeTransferFromERC20(IERC20Transferable(_alcaAddress()), msg.sender, stakingAmount_);
         // mint the position directly to the lockup contract
         uint256 tokenID = _stake(_lockupContract, stakingAmount_);
         // right in sequence claim the minted position
@@ -89,12 +88,12 @@ contract StakingRouterV1 is
 
     function _migrate(address from_, uint256 amount_) internal returns (uint256 migratedAmount_) {
         _safeTransferFromERC20(IERC20Transferable(_legacyToken), from_, amount_);
-        IERC20(_legacyToken).approve(_aTokenAddress(), amount_);
-        migratedAmount_ = IStakingToken(_aTokenAddress()).migrateTo(address(this), amount_);
+        IERC20(_legacyToken).approve(_alcaAddress(), amount_);
+        migratedAmount_ = IStakingToken(_alcaAddress()).migrateTo(address(this), amount_);
     }
 
     function _stake(address to_, uint256 stakingAmount_) internal returns (uint256 tokenID_) {
-        IERC20(_aTokenAddress()).approve(_publicStakingAddress(), stakingAmount_);
+        IERC20(_alcaAddress()).approve(_publicStakingAddress(), stakingAmount_);
         tokenID_ = IStakingNFT(_publicStakingAddress()).mintTo(to_, stakingAmount_, 0);
     }
 
@@ -108,7 +107,7 @@ contract StakingRouterV1 is
         }
         uint256 remainder = migratedAmount_ - stakingAmount_;
         if (remainder > 0) {
-            _safeTransferERC20(IERC20Transferable(_aTokenAddress()), to_, remainder);
+            _safeTransferERC20(IERC20Transferable(_alcaAddress()), to_, remainder);
         }
     }
 }

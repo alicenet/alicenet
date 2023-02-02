@@ -1,4 +1,5 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { ethers } from "hardhat";
 import { getValidatorEthAccount } from "../../setup";
 import { validators4 } from "../assets/4-validators-successful-case";
 import {
@@ -18,7 +19,7 @@ describe("ETHDKG: ETHDKG Completion", () => {
     return startAtGPKJ(validators4);
   }
 
-  it("should not allow completion until after the DisputeGPKj phase", async () => {
+  it("should not allow completion until after the DisputeGPKj phase [ @skip-on-coverage ]", async () => {
     const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
       deployFixture
     );
@@ -43,6 +44,7 @@ describe("ETHDKG: ETHDKG Completion", () => {
       phaseStartBlock,
       phaseLength,
     ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+
     await expect(txPromise)
       .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
       .withArgs(expectedCurrentPhase, expectedBlockNumber, [
@@ -53,6 +55,15 @@ describe("ETHDKG: ETHDKG Completion", () => {
         ],
       ]);
 
+    // master public should not have been set in the mpk registry yet
+    const expectedHash = ethers.utils.solidityKeccak256(
+      ["uint256", "uint256", "uint256", "uint256"],
+      [...validators4[0].mpk]
+    );
+    expect(await ethdkg.isValidMasterPublicKey(expectedHash)).to.be.equal(
+      false
+    );
+
     await assertETHDKGPhase(ethdkg, Phase.DisputeGPKJSubmission);
     await endCurrentPhase(ethdkg);
     await assertETHDKGPhase(ethdkg, Phase.DisputeGPKJSubmission);
@@ -60,6 +71,8 @@ describe("ETHDKG: ETHDKG Completion", () => {
     const tx = await ethdkg
       .connect(await getValidatorEthAccount(validators4[0].address))
       .complete();
+
+    expect(await ethdkg.isValidMasterPublicKey(expectedHash)).to.be.equal(true);
 
     await assertEventValidatorSetCompleted(
       tx,
@@ -72,7 +85,7 @@ describe("ETHDKG: ETHDKG Completion", () => {
     );
   });
 
-  it("should not allow non-validators to complete ETHDKG", async () => {
+  it("should not allow non-validators to complete ETHDKG [ @skip-on-coverage ]", async () => {
     const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
       deployFixture
     );
@@ -119,7 +132,7 @@ describe("ETHDKG: ETHDKG Completion", () => {
       .withArgs(validatorAddress);
   });
 
-  it("should not allow double completion of ETHDKG", async () => {
+  it("should not allow double completion of ETHDKG [ @skip-on-coverage ]", async () => {
     const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
       deployFixture
     );
@@ -195,7 +208,7 @@ describe("ETHDKG: ETHDKG Completion", () => {
       ]);
   });
 
-  it("should not allow validators to participate in previous phases", async () => {
+  it("should not allow validators to participate in previous phases [ @skip-on-coverage ]", async () => {
     const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
       deployFixture
     );

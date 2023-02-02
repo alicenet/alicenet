@@ -9,7 +9,7 @@ import (
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/evm"
 	"github.com/alicenet/alicenet/layer1/handlers"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/ethereum/go-ethereum/common"
@@ -33,7 +33,8 @@ var SendWeiCommand = cobra.Command{
 
 func setupEthereum(logger *logrus.Entry) (layer1.Client, layer1.AllSmartContracts, error) {
 	logger.Info("Connecting to Ethereum endpoint ...")
-	eth, err := ethereum.NewClient(
+	eth, err := evm.NewClient(
+		logger.Logger,
 		config.Configuration.Ethereum.Endpoint,
 		config.Configuration.Ethereum.Keystore,
 		config.Configuration.Ethereum.PassCodes,
@@ -126,7 +127,9 @@ func utilsNode(cmd *cobra.Command, args []string) {
 func sendWei(logger *logrus.Entry, eth layer1.Client, cmd *cobra.Command, args []string) int {
 
 	if len(args) < 2 {
-		logger.Errorf("Arguments must include: amount, who\nwho can be a space delimited list of addresses")
+		logger.Errorf(
+			"Arguments must include: amount, who\nwho can be a space delimited list of addresses",
+		)
 		return 1
 	}
 
@@ -138,7 +141,11 @@ func sendWei(logger *logrus.Entry, eth layer1.Client, cmd *cobra.Command, args [
 
 	from := eth.GetDefaultAccount()
 	for idx := 1; idx < len(args); idx++ {
-		_, err := ethereum.TransferEther(eth, logger, from.Address, common.HexToAddress(args[idx]), wei)
+		_, err := eth.TransferNativeToken(
+			from.Address,
+			common.HexToAddress(args[idx]),
+			wei,
+		)
 		if err != nil {
 			logger.Errorf("Transfer failed: %v", err)
 			return 1

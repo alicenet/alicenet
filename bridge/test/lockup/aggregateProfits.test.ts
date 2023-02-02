@@ -31,7 +31,7 @@ describe("Testing Staking Distribution", async () => {
     ));
   });
 
-  it("aggregate profits", async () => {
+  it("aggregate profits [ @skip-on-coverage ]", async () => {
     const stakedTokenIDs = await getSimulatedStakingPositions(
       fixture,
       accounts,
@@ -113,10 +113,10 @@ describe("Testing Staking Distribution", async () => {
     assert.deepEqual(await getState(fixture), expectedState);
   });
 
-  it("attempt to call aggregate profit without a staked bonus position", async () => {
+  it("attempt to call aggregate profit without a staked bonus position [ @skip-on-coverage ]", async () => {
     const approvalAmount = ethers.utils.parseEther("200000000");
     // approve public staking to spend account 1 alca
-    const txResponse = await fixture.aToken
+    const txResponse = await fixture.alca
       .connect(accounts[0])
       .increaseAllowance(fixture.publicStaking.address, approvalAmount);
     await txResponse.wait();
@@ -130,15 +130,15 @@ describe("Testing Staking Distribution", async () => {
     ).to.revertedWithCustomError(fixture.bonusPool, "BonusTokenNotCreated");
   });
 
-  it("creates 100 positions in 100 accounts", async () => {
+  it("creates 100 positions in 100 accounts [ @skip-on-coverage ]", async () => {
     const numTxs = 100;
     const approvalAmount = ethers.utils.parseEther("200000000");
     // approve public staking to spend account 1 alca
-    let txResponse = await fixture.aToken
+    let txResponse = await fixture.alca
       .connect(accounts[0])
       .increaseAllowance(fixture.publicStaking.address, approvalAmount);
     await txResponse.wait();
-    txResponse = await fixture.aToken
+    txResponse = await fixture.alca
       .connect(accounts[0])
       .transfer(fixture.bonusPool.address, totalBonusAmount);
     await txResponse.wait();
@@ -166,7 +166,7 @@ describe("Testing Staking Distribution", async () => {
     const payoutState = await fixture.lockup.payoutSafe();
     expect(payoutState).to.eq(false);
     // showState("after first aggregate", currentState);
-    const lockupALCABalance = await fixture.aToken.balanceOf(
+    const lockupALCABalance = await fixture.alca.balanceOf(
       fixture.lockup.address
     );
     const lockupEthBalance = await ethers.provider.getBalance(

@@ -6,7 +6,7 @@ import { ethers } from "hardhat";
 import { deployCreateAndRegister } from "../../scripts/lib/alicenetFactory";
 import {
   CONTRACT_ADDR,
-  DEPLOYED_RAW,
+  EVENT_DEPLOYED_RAW,
   STAKING_ROUTER_V1,
 } from "../../scripts/lib/constants";
 import {
@@ -59,7 +59,7 @@ async function deployFixture() {
   // get the address from the event
   const lockupAddress = await getEventVar(
     txResponse,
-    DEPLOYED_RAW,
+    EVENT_DEPLOYED_RAW,
     CONTRACT_ADDR
   );
   // deploy staking router
@@ -67,18 +67,18 @@ async function deployFixture() {
   contractName = ethers.utils.formatBytes32String(STAKING_ROUTER_V1);
   txResponse = await deployCreateAndRegister(
     STAKING_ROUTER_V1,
-    fixture.factory.address,
+    fixture.factory,
     ethers,
     [],
-    undefined
+    contractName
   );
   // get the address from the event
   const stakingRouterAddress = await getEventVar(
     txResponse,
-    DEPLOYED_RAW,
+    EVENT_DEPLOYED_RAW,
     CONTRACT_ADDR
   );
-  await posFixtureSetup(fixture.factory, fixture.aToken);
+  await posFixtureSetup(fixture.factory, fixture.alca);
   const lockup = await ethers.getContractAt("Lockup", lockupAddress);
   // get the address of the reward pool from the lockup contract
   rewardPoolAddress = await lockup.getRewardPoolAddress();
@@ -117,12 +117,10 @@ describe("StakingRouterV1", async () => {
   });
 
   describe("migrateAndStake", async () => {
-    it("reverts if stakingAmount is greater than migratedAmount", async () => {
+    it("reverts if stakingAmount is greater than migratedAmount [ @skip-on-coverage ]", async () => {
       const shortMigrationAmount = stakedAmount - 1n;
       // ensure no bonus tokens are minted
-      await fixture.aToken
-        .connect(fixture.mockFactorySigner)
-        .finishEarlyStage();
+      await fixture.alca.connect(fixture.mockFactorySigner).finishEarlyStage();
       await (
         await fixture.legacyToken.increaseAllowance(
           fixture.stakingRouterV1.address,
@@ -145,11 +143,11 @@ describe("StakingRouterV1", async () => {
         .withArgs(stakedAmount, shortMigrationAmount);
     });
 
-    it("successfully migrates legacy token from sender, stakes amount and transfers position to address specified and remainder to sender", async () => {
+    it("successfully migrates legacy token from sender, stakes amount and transfers position to address specified and remainder to sender [ @skip-on-coverage ]", async () => {
       const sender = accounts[0];
       const recipient = accounts[1];
       const expectedMigrationAmountAfterConversion = await (
-        await fixture.aToken.convert(migrationAmount)
+        await fixture.alca.convert(migrationAmount)
       ).toBigInt();
 
       const expectedRemainder =
@@ -158,7 +156,7 @@ describe("StakingRouterV1", async () => {
       const balanceOfSenderBefore = await fixture.legacyToken.balanceOf(
         sender.address
       );
-      expect(await fixture.aToken.balanceOf(recipient.address)).to.equal(0);
+      expect(await fixture.alca.balanceOf(recipient.address)).to.equal(0);
 
       expect(
         await fixture.publicStaking.balanceOf(recipient.address)
@@ -178,7 +176,7 @@ describe("StakingRouterV1", async () => {
       expect(await fixture.legacyToken.balanceOf(sender.address)).to.be.equal(
         balanceOfSenderBefore.sub(migrationAmount)
       );
-      expect(await fixture.aToken.balanceOf(recipient.address)).to.be.equal(
+      expect(await fixture.alca.balanceOf(recipient.address)).to.be.equal(
         expectedRemainder
       );
       expect(
@@ -198,12 +196,10 @@ describe("StakingRouterV1", async () => {
   });
 
   describe("migrateStakeAndLock", async () => {
-    it("reverts if stakingAmount is greater than migratedAmount", async () => {
+    it("reverts if stakingAmount is greater than migratedAmount [ @skip-on-coverage ]", async () => {
       const shortMigrationAmount = stakedAmount - 1n;
       // ensure no bonus tokens are minted
-      await fixture.aToken
-        .connect(fixture.mockFactorySigner)
-        .finishEarlyStage();
+      await fixture.alca.connect(fixture.mockFactorySigner).finishEarlyStage();
       await (
         await fixture.legacyToken.increaseAllowance(
           fixture.stakingRouterV1.address,
@@ -226,11 +222,11 @@ describe("StakingRouterV1", async () => {
         .withArgs(stakedAmount, shortMigrationAmount);
     });
 
-    it("successfully migrates legacy token from sender, stakes amount, locks stake and transfers position to address specified and remainder to sender", async () => {
+    it("successfully migrates legacy token from sender, stakes amount, locks stake and transfers position to address specified and remainder to sender [ @skip-on-coverage ]", async () => {
       const sender = accounts[0];
       const recipient = accounts[1];
       const expectedMigrationAmountAfterConversion = await (
-        await fixture.aToken.convert(migrationAmount)
+        await fixture.alca.convert(migrationAmount)
       ).toBigInt();
 
       const expectedRemainder =
@@ -239,7 +235,7 @@ describe("StakingRouterV1", async () => {
       const balanceOfSenderBefore = await fixture.legacyToken.balanceOf(
         sender.address
       );
-      expect(await fixture.aToken.balanceOf(recipient.address)).to.equal(0);
+      expect(await fixture.alca.balanceOf(recipient.address)).to.equal(0);
 
       expect(await fixture.lockup.tokenOf(recipient.address)).to.be.equal(0);
       await (
@@ -257,7 +253,7 @@ describe("StakingRouterV1", async () => {
       expect(await fixture.legacyToken.balanceOf(sender.address)).to.be.equal(
         balanceOfSenderBefore.sub(migrationAmount)
       );
-      expect(await fixture.aToken.balanceOf(recipient.address)).to.be.equal(
+      expect(await fixture.alca.balanceOf(recipient.address)).to.be.equal(
         expectedRemainder
       );
       const tokenID = await fixture.lockup.tokenOf(recipient.address);
@@ -272,19 +268,19 @@ describe("StakingRouterV1", async () => {
   });
 
   describe("stakeAndLock", async () => {
-    it("successfully stakes amount from sender and transfers position to specified account", async () => {
+    it("successfully stakes amount from sender and transfers position to specified account [ @skip-on-coverage ]", async () => {
       const sender = accounts[0];
       const recipient = accounts[1];
 
-      const balanceOfSenderBefore = await fixture.aToken.balanceOf(
+      const balanceOfSenderBefore = await fixture.alca.balanceOf(
         sender.address
       );
-      expect(await fixture.aToken.balanceOf(recipient.address)).to.equal(0);
+      expect(await fixture.alca.balanceOf(recipient.address)).to.equal(0);
 
       expect(await fixture.lockup.tokenOf(recipient.address)).to.be.equal(0);
 
       await (
-        await fixture.aToken
+        await fixture.alca
           .connect(sender)
           .increaseAllowance(fixture.stakingRouterV1.address, stakedAmount)
       ).wait();
@@ -295,7 +291,7 @@ describe("StakingRouterV1", async () => {
           .stakeAndLock(recipient.address, stakedAmount)
       ).to.not.be.reverted;
 
-      expect(await fixture.aToken.balanceOf(sender.address)).to.be.equal(
+      expect(await fixture.alca.balanceOf(sender.address)).to.be.equal(
         balanceOfSenderBefore.sub(stakedAmount)
       );
 

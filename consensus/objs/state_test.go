@@ -77,6 +77,7 @@ func makeSecpSigner(seed []byte) (*crypto.Secp256k1Signer, []byte) {
 }
 
 func buildRound(t *testing.T, bnSigners []*crypto.BNGroupSigner, groupShares [][]byte, secpSigners []*crypto.Secp256k1Signer, height, round uint32, prevBlock []byte) (*BlockHeader, []*Proposal, PreVoteList, []*PreVoteNil, PreCommitList, []*PreCommitNil, NextRoundList, NextHeightList, *BlockHeader) {
+	t.Helper()
 	pl := []*Proposal{}
 	pvl := PreVoteList{}
 	pvnl := []*PreVoteNil{}
@@ -262,6 +263,7 @@ func makeValidatorSet(nbbh uint32, groupk []byte, secpSigners []*crypto.Secp256k
 }
 
 func makeSigners2(t *testing.T) ([]byte, []*crypto.BNGroupSigner, [][]byte, []*crypto.Secp256k1Signer, [][]byte) {
+	t.Helper()
 	s := new(crypto.BNGroupSigner)
 	msg := []byte("A message to sign")
 

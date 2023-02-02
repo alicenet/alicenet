@@ -35,7 +35,7 @@ async function deployFixture() {
     undefined
   )) as Foundation;
 
-  await posFixtureSetup(fixture.factory, fixture.aToken);
+  await posFixtureSetup(fixture.factory, fixture.alca);
 
   // get the address of the reward pool from the lockup contract
   const lockupAddress = signers[5].address;
@@ -48,7 +48,7 @@ async function deployFixture() {
   // deploy reward pool
   const rewardPool = await (await ethers.getContractFactory("RewardPool"))
     .connect(asLockup)
-    .deploy(fixture.aToken.address, aliceNetFactoryAddress, totalBonusAmount);
+    .deploy(fixture.alca.address, aliceNetFactoryAddress, totalBonusAmount);
   // Deploy the bonus pool standalone
   const bonusPoolAddress = await rewardPool.getBonusPoolAddress();
   const bonusPool = await ethers.getContractAt("BonusPool", bonusPoolAddress);
@@ -77,7 +77,7 @@ describe("BonusPool", async () => {
   });
 
   describe("createBonusStakedPosition", async () => {
-    it("Reverts if called from non factory address", async () => {
+    it("Reverts if called from non factory address [ @skip-on-coverage ]", async () => {
       await expect(
         fixture.bonusPool.connect(accounts[1]).createBonusStakedPosition()
       )
@@ -87,7 +87,7 @@ describe("BonusPool", async () => {
   });
 
   describe("terminate", async () => {
-    it("Reverts if called from non lockup address", async () => {
+    it("Reverts if called from non lockup address [ @skip-on-coverage ]", async () => {
       await expect(
         fixture.bonusPool.connect(accounts[1]).terminate()
       ).to.be.revertedWithCustomError(fixture.bonusPool, "CallerNotLockup");

@@ -31,7 +31,11 @@ type TaskExecutor struct {
 }
 
 // newTaskExecutor creates a new TaskExecutor instance and recover the previous state from DB.
-func newTaskExecutor(txWatcher transaction.Watcher, database *db.Database, logger *logrus.Entry) (*TaskExecutor, error) {
+func newTaskExecutor(
+	txWatcher transaction.Watcher,
+	database *db.Database,
+	logger *logrus.Entry,
+) (*TaskExecutor, error) {
 	taskExecutor := &TaskExecutor{
 		TxsBackup: make(map[string]*types.Transaction),
 		closeChan: make(chan struct{}),
@@ -108,22 +112,82 @@ func (te *TaskExecutor) getTxBackup(uuid string) (*types.Transaction, bool) {
 }
 
 // handleTaskExecution It is basically an abstraction to handle the task execution in a separate process.
-func (te *TaskExecutor) handleTaskExecution(task tasks.Task, name string, taskId string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.InternalTaskResponseChan) {
-	err := te.processTask(task, name, taskId, start, end, allowMultiExecution, subscribeOptions, database, logger, eth, contracts, taskResponseChan)
+func (te *TaskExecutor) handleTaskExecution(
+	task tasks.Task,
+	name string,
+	taskId string,
+	start uint64,
+	end uint64,
+	allowMultiExecution bool,
+	subscribeOptions *transaction.SubscribeOptions,
+	database *db.Database,
+	logger *logrus.Entry,
+	eth layer1.Client,
+	contracts layer1.AllSmartContracts,
+	taskResponseChan tasks.InternalTaskResponseChan,
+) {
+	err := te.processTask(
+		task,
+		name,
+		taskId,
+		start,
+		end,
+		allowMultiExecution,
+		subscribeOptions,
+		database,
+		logger,
+		eth,
+		contracts,
+		taskResponseChan,
+	)
 	// Clean up in case the task was killed
 	if task.WasKilled() {
 		task.GetLogger().Trace("task was externally killed, removing tx backup")
-		te.removeTxBackup(task.GetId())
+		err := te.removeTxBackup(task.GetId())
+		if err != nil {
+			task.GetLogger().Error("removal of tx back up failure")
+		}
 	}
-	task.Finish(err)
+
+	if errors.Is(err, tasks.ErrTaskExecutionMechanismClosed) {
+		task.GetLogger().
+			Trace("task execution mechanism was closed, the task will recover after node restart")
+	} else {
+		task.Finish(err)
+	}
 }
 
 // processTask processes all the stages of the task execution.
-func (te *TaskExecutor) processTask(task tasks.Task, name string, taskId string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.InternalTaskResponseChan) error {
+func (te *TaskExecutor) processTask(
+	task tasks.Task,
+	name string,
+	taskId string,
+	start uint64,
+	end uint64,
+	allowMultiExecution bool,
+	subscribeOptions *transaction.SubscribeOptions,
+	database *db.Database,
+	logger *logrus.Entry,
+	eth layer1.Client,
+	contracts layer1.AllSmartContracts,
+	taskResponseChan tasks.InternalTaskResponseChan,
+) error {
 	taskCtx, cf := context.WithCancel(context.Background())
 	defer cf()
 
-	err := task.Initialize(database, logger, eth, contracts, name, taskId, start, end, allowMultiExecution, subscribeOptions, taskResponseChan)
+	err := task.Initialize(
+		database,
+		logger,
+		eth,
+		contracts,
+		name,
+		taskId,
+		start,
+		end,
+		allowMultiExecution,
+		subscribeOptions,
+		taskResponseChan,
+	)
 	if err != nil {
 		return err
 	}
@@ -160,7 +224,11 @@ func (te *TaskExecutor) processTask(task tasks.Task, name string, taskId string,
 
 // prepareTask executes task preparation. We keep retrying until the task is
 // killed, we get an unrecoverable error, or we succeed.
-func (te *TaskExecutor) prepareTask(ctx context.Context, task tasks.Task, retryDelay time.Duration) error {
+func (te *TaskExecutor) prepareTask(
+	ctx context.Context,
+	task tasks.Task,
+	retryDelay time.Duration,
+) error {
 	for {
 		if task.WasKilled() {
 			return tasks.ErrTaskKilled
@@ -186,7 +254,11 @@ func (te *TaskExecutor) prepareTask(ctx context.Context, task tasks.Task, retryD
 
 // executeTask executes task business logic. We keep retrying until the task is
 // killed, we get an unrecoverable error, or we succeed.
-func (te *TaskExecutor) executeTask(ctx context.Context, task tasks.Task, retryDelay time.Duration) error {
+func (te *TaskExecutor) executeTask(
+	ctx context.Context,
+	task tasks.Task,
+	retryDelay time.Duration,
+) error {
 	logger := task.GetLogger()
 	for {
 		hasToExecute, err := te.shouldExecute(ctx, task)
@@ -206,7 +278,10 @@ func (te *TaskExecutor) executeTask(ctx context.Context, task tasks.Task, retryD
 				}
 				continue
 			}
-			logger.Debugf("got a unrecoverable error during task.execute finishing execution err: %v", taskErr.Error())
+			logger.Debugf(
+				"got a unrecoverable error during task.execute finishing execution err: %v",
+				taskErr.Error(),
+			)
 			return taskErr
 		}
 		if txn != nil {
@@ -233,7 +308,11 @@ func (te *TaskExecutor) executeTask(ctx context.Context, task tasks.Task, retryD
 // checkCompletion checks if a task is complete. The function is going to subscribe a
 // transaction in the txWatcher, and it will wait until it gets the receipt,
 // the task is killed, or shouldExecute returns false.
-func (te *TaskExecutor) checkCompletion(ctx context.Context, task tasks.Task, txn *types.Transaction) (bool, error) {
+func (te *TaskExecutor) checkCompletion(
+	ctx context.Context,
+	task tasks.Task,
+	txn *types.Transaction,
+) (bool, error) {
 	var err error
 	var receipt *types.Receipt
 	logger := task.GetLogger()

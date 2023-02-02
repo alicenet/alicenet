@@ -10,6 +10,11 @@ import "contracts/utils/CustomEnumerableMaps.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/libraries/errors/ValidatorPoolErrors.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableSnapshots.sol";
+import "contracts/utils/auth/ImmutableETHDKG.sol";
+import "contracts/utils/auth/ImmutableValidatorStaking.sol";
+import "contracts/utils/auth/ImmutableALCA.sol";
 
 contract ValidatorPoolMock is
     Initializable,
@@ -18,7 +23,7 @@ contract ValidatorPoolMock is
     ImmutableSnapshots,
     ImmutableETHDKG,
     ImmutableValidatorStaking,
-    ImmutableAToken
+    ImmutableALCA
 {
     using CustomEnumerableMaps for ValidatorDataMap;
     error OnlyAdminAllowed();
@@ -53,12 +58,12 @@ contract ValidatorPoolMock is
         ImmutableValidatorStaking()
         ImmutableSnapshots()
         ImmutableETHDKG()
-        ImmutableAToken()
+        ImmutableALCA()
     {}
 
     function initialize() public onlyFactory initializer {
-        //20000*10**18 ATokenWei = 20k ATokens
-        _stakeAmount = 20000 * 10**18;
+        //20000*10**18 ALCAWei = 20k ALCAs
+        _stakeAmount = 20000 * 10 ** 18;
     }
 
     function initializeETHDKG() public {
@@ -78,28 +83,27 @@ contract ValidatorPoolMock is
     }
 
     function mintValidatorStaking() public returns (uint256 stakeID_) {
-        IERC20Transferable(_aTokenAddress()).transferFrom(msg.sender, address(this), _stakeAmount);
-        IERC20Transferable(_aTokenAddress()).approve(_validatorStakingAddress(), _stakeAmount);
+        IERC20Transferable(_alcaAddress()).transferFrom(msg.sender, address(this), _stakeAmount);
+        IERC20Transferable(_alcaAddress()).approve(_validatorStakingAddress(), _stakeAmount);
         stakeID_ = IStakingNFT(_validatorStakingAddress()).mint(_stakeAmount);
     }
 
-    function burnValidatorStaking(uint256 tokenID_)
-        public
-        returns (uint256 payoutEth, uint256 payoutAToken)
-    {
+    function burnValidatorStaking(
+        uint256 tokenID_
+    ) public returns (uint256 payoutEth, uint256 payoutALCA) {
         return IStakingNFT(_validatorStakingAddress()).burn(tokenID_);
     }
 
     function mintToValidatorStaking(address to_) public returns (uint256 stakeID_) {
-        IERC20Transferable(_aTokenAddress()).transferFrom(msg.sender, address(this), _stakeAmount);
-        IERC20Transferable(_aTokenAddress()).approve(_validatorStakingAddress(), _stakeAmount);
+        IERC20Transferable(_alcaAddress()).transferFrom(msg.sender, address(this), _stakeAmount);
+        IERC20Transferable(_alcaAddress()).approve(_validatorStakingAddress(), _stakeAmount);
         stakeID_ = IStakingNFT(_validatorStakingAddress()).mintTo(to_, _stakeAmount, 1);
     }
 
-    function burnToValidatorStaking(uint256 tokenID_, address to_)
-        public
-        returns (uint256 payoutEth, uint256 payoutAToken)
-    {
+    function burnToValidatorStaking(
+        uint256 tokenID_,
+        address to_
+    ) public returns (uint256 payoutEth, uint256 payoutALCA) {
         return IStakingNFT(_validatorStakingAddress()).burnTo(to_, tokenID_);
     }
 
@@ -157,9 +161,10 @@ contract ValidatorPoolMock is
 
     function setLocation(string memory ip) public {}
 
-    function registerValidators(address[] memory validators, uint256[] memory stakerTokenIDs)
-        public
-    {
+    function registerValidators(
+        address[] memory validators,
+        uint256[] memory stakerTokenIDs
+    ) public {
         stakerTokenIDs;
         _registerValidators(validators);
     }
@@ -224,15 +229,7 @@ contract ValidatorPoolMock is
         return 0;
     }
 
-    function tryGetTokenID(address account_)
-        public
-        pure
-        returns (
-            bool,
-            address,
-            uint256
-        )
-    {
+    function tryGetTokenID(address account_) public pure returns (bool, address, uint256) {
         account_; //no-op to suppress compiling warnings
         return (false, address(0), 0);
     }
