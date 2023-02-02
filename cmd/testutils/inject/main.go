@@ -22,7 +22,7 @@ import (
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/evm"
 	"github.com/alicenet/alicenet/layer1/handlers"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
@@ -277,7 +277,7 @@ type funder struct {
 	chainID          uint32
 	acct             []byte
 	ethAcct          accounts.Account
-	ethClient        *ethereum.Client
+	ethClient        *evm.Client
 	ethContracts     layer1.AllSmartContracts
 	ethTxWatcher     *transaction.FrontWatcher
 	clientList       []*localrpc.Client
@@ -287,7 +287,7 @@ type funder struct {
 func createNewFunder(
 	ctx context.Context,
 	logger *logrus.Entry,
-	ethClient *ethereum.Client,
+	ethClient *evm.Client,
 	ethAccount accounts.Account,
 	ethWatcher *transaction.FrontWatcher,
 	ethContracts layer1.AllSmartContracts,
@@ -794,11 +794,11 @@ func (f *funder) mintALCBDepositOnEthereum() error {
 	if !ok {
 		f.logger.Fatal("Could not generate deposit amount")
 	}
-	bTokenABI, err := abi.JSON(strings.NewReader(bindings.BTokenMetaData.ABI))
+	alcbABI, err := abi.JSON(strings.NewReader(bindings.ALCBMetaData.ABI))
 	if err != nil {
 		return err
 	}
-	input, err := bTokenABI.Pack(
+	input, err := alcbABI.Pack(
 		"virtualMintDeposit",
 		uint8(1),
 		f.ethAcct.Address,
@@ -809,7 +809,7 @@ func (f *funder) mintALCBDepositOnEthereum() error {
 	}
 	txn, err := f.ethContracts.EthereumContracts().ContractFactory().CallAny(
 		txnOpts,
-		f.ethContracts.EthereumContracts().BTokenAddress(),
+		f.ethContracts.EthereumContracts().ALCBAddress(),
 		big.NewInt(0),
 		input,
 	)
@@ -971,7 +971,6 @@ func main() {
 	spamMode := *modePtr == 0
 	// make sure to have nodes listening in these ports
 	nodeList := []string{
-		"127.0.0.1:8887",
 		"127.0.0.1:9884",
 		"127.0.0.1:9885",
 		"127.0.0.1:9886",
@@ -991,7 +990,8 @@ func main() {
 	defer recoverDB.DB().Close()
 
 	keyStorePath, passCodePath, accounts := tests.CreateAccounts(tempDir, 1)
-	eth, err := ethereum.NewClient(
+	eth, err := evm.NewClient(
+		logger.Logger,
 		*ethereumEndPointPtr,
 		keyStorePath,
 		passCodePath,
