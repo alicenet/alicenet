@@ -18,6 +18,7 @@ linters:
     - gosimple
     - govet
     - grouper 
+    - misspell 
     - ineffassign
     - staticcheck
     - tenv 
@@ -53,7 +54,6 @@ linters:
     - importas # 50 issues
     - maintidx # 18 issues
     - makezero # 4 issues
-    - misspell # 6 issues
     - nakedret # 2 issues
     - nestif # 50 issues
     - nilerr # 8 issues
