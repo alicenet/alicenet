@@ -2,12 +2,13 @@
 pragma solidity ^0.8.16;
 
 import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableSnapshots.sol";
 import "contracts/libraries/errors/BridgePoolFactoryErrors.sol";
 import "contracts/interfaces/IBridgePool.sol";
 import "contracts/utils/BridgePoolAddressUtil.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-abstract contract BridgePoolFactoryBase is ImmutableFactory {
+abstract contract BridgePoolFactoryBase is ImmutableFactory, ImmutableSnapshots {
     enum TokenType {
         ERC20,
         ERC721,
@@ -37,6 +38,13 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
 
     constructor() ImmutableFactory(msg.sender) {
         _chainID = block.chainid;
+    }
+
+    /**
+     * @notice returns required immutable contract addresses
+     */
+    function getImmutableContractAdresses() public view returns (address, address) {
+        return (_snapshotsAddress(), _factoryAddress());
     }
 
     // NativeERC20V!
@@ -87,8 +95,6 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         assembly ("memory-safe") {
             let ptr := mload(0x40)
             calldatacopy(ptr, deployCode_.offset, deployCode_.length)
-            // add bytes32 alicenet factory address as parameter to constructor
-            mstore(add(ptr, deployCode_.length), alicenetFactoryAddress)
             addr := create(value_, ptr, add(deployCode_.length, 32))
             codeSize := extcodesize(addr)
         }
