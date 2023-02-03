@@ -53,7 +53,7 @@ func (lrpc *Client) Connect(ctx context.Context) error {
 			lrpc.TimeOut = constants.MsgTimeout
 		}
 		// Set up a connection to the server.
-		ctx, cancel := context.WithTimeout(context.Background(), lrpc.TimeOut)
+		ctx, cancel := context.WithTimeout(ctx, lrpc.TimeOut)
 		defer cancel()
 		conn, err := grpc.DialContext(ctx, lrpc.Address, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 		if err != nil {
