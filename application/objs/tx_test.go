@@ -9,9 +9,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/alicenet/alicenet/application/objs/txhash"
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/utils"
 )
 
 func makeVS(t *testing.T, ownerSigner Signer, i int) *TXOut {
@@ -1053,6 +1055,7 @@ func TestTxComputeTxHashGood(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// make txins
 	numConsumed := 5
 	consumedUTXOs := Vout{}
 	for i := 0; i < numConsumed; i++ {
@@ -1062,7 +1065,6 @@ func TestTxComputeTxHashGood(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	txInputs := []*TXIn{}
 	for i := 0; i < numConsumed; i++ {
 		txIn, err := consumedUTXOs[i].MakeTxIn()
@@ -1071,6 +1073,8 @@ func TestTxComputeTxHashGood(t *testing.T) {
 		}
 		txInputs = append(txInputs, txIn)
 	}
+
+	// make utxos
 	generatedUTXOs := Vout{}
 	for i := 0; i < numConsumed; i++ {
 		generatedUTXOs = append(generatedUTXOs, makeVS(t, ownerSigner, 0))
@@ -1079,6 +1083,8 @@ func TestTxComputeTxHashGood(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// make tx
 	tx := &Tx{
 		Vin:  txInputs,
 		Vout: generatedUTXOs,
@@ -1094,11 +1100,57 @@ func TestTxComputeTxHashGood(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+
+	// compute correct txhash value
+	bytes0 := utils.MarshalUint32(0)
+	bytes1 := utils.MarshalUint32(1)
+	bytes2 := utils.MarshalUint32(2)
+	// type data
+	typeBytes := utils.MarshalUint32(tx.Type)
+	typeData := append(utils.CopySlice(bytes0), typeBytes...)
+	typeLeaf := txhash.LeafHash(typeData)
+	// data data
+	if len(tx.Data) != 0 {
+		t.Fatal("Should have len(tx.Data) == 0")
+	}
+	dataData := utils.CopySlice(bytes1)
+	dataLeaf := txhash.LeafHash(dataData)
+	// txin data
+	txinData := [][]byte{}
+	for i := 0; i < len(consumedUTXOs); i++ {
+		utxoID, err := tx.Vin[i].UTXOID()
+		if err != nil {
+			t.Fatal(err)
+		}
+		data := append(utils.CopySlice(bytes2), utxoID...)
+		txinData = append(txinData, data)
+	}
+	vinHash := txhash.ComputeMerkleRoot(txinData)
+	// utxo data
+	utxoData := [][]byte{}
+	for i := 0; i < len(consumedUTXOs); i++ {
+		prehash, err := tx.Vout[i].PreHash()
+		if err != nil {
+			t.Fatal(err)
+		}
+		utxoID := MakeUTXOID(prehash, uint32(i))
+		data := append(utils.CopySlice(bytes2), utxoID...)
+		utxoData = append(utxoData, data)
+	}
+	voutHash := txhash.ComputeMerkleRoot(utxoData)
+	// finish computation
+	tmp1 := txhash.HashPair(typeLeaf, dataLeaf)
+	tmp2 := txhash.HashPair(vinHash, voutHash)
+	trueRoot := txhash.HashPair(tmp1, tmp2)
+
+	// compute txhash
 	txhash, err := tx.computeTxHash()
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("%x", txhash)
+	if !bytes.Equal(txhash, trueRoot) {
+		t.Fatal("invalid txhash computation")
+	}
 }
 
 func TestTxComputeTxHashBad0(t *testing.T) {
