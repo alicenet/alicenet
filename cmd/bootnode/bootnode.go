@@ -28,11 +28,7 @@ var Command = &cobra.Command{
 	Run:   bootNode}
 
 func init() {
-	logger := logging.GetLogger(Command.Name())
 	Command.Flags().StringVar(&config.Configuration.BootNode.ListeningAddress, "bootnode.listeningAddress", "", "")
-	//chain
-	logger.Infof("listening address before is %s", config.Configuration.BootNode.ListeningAddress)
-
 	Command.Flags().IntVar(&config.Configuration.BootNode.CacheSize, "bootnode.cacheSize", 0, "")
 }
 
@@ -52,7 +48,7 @@ func extractPort(addr string) (uint32, error) {
 // bootNode for the initialization
 func bootNode(cmd *cobra.Command, args []string) {
 	logger := logging.GetLogger(cmd.Name())
-
+	logger.Infof("Bootnode started with default value: %v", config.Configuration.BootNode)
 	logger.Infof("Bootnode started with args: %v", args)
 	privateKeyHex := config.Configuration.Transport.PrivateKey
 	cid := types.ChainIdentifier(config.Configuration.Chain.ID)
@@ -75,6 +71,7 @@ func bootNode(cmd *cobra.Command, args []string) {
 
 	// Register a boot node server
 	cacheSize := config.Configuration.BootNode.CacheSize
+	logger.Infof("cache size is %d", cacheSize)
 	cache, err := lru.New(cacheSize)
 	if err != nil {
 		panic(err)

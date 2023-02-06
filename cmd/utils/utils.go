@@ -22,18 +22,19 @@ var Command = &cobra.Command{
 	Use:   "utils",
 	Short: "A collection of tools for node administration",
 	Long:  "utils is a misc. collection of tools. Ranges from initial config to automating Ethereum setup",
-	Run:   utilsNode}
+	Run:   utilsNode,
+}
+
+func init() {
+	Command.Flags().BoolVar(&config.Configuration.Utils.Status, "utils.status", false, "")
+}
 
 // SendWeiCommand is the command that sends wei from one account to another
-var SendWeiCommand = cobra.Command{
+var SendWeiCommand = &cobra.Command{
 	Use:   "sendwei",
 	Short: "",
 	Long:  "",
 	Run:   utilsNode}
-
-func init() {
-	Command.Flags().BoolVar(&config.Configuration.Utils.Status, "status", false, "")
-}
 
 func setupEthereum(logger *logrus.Entry) (layer1.Client, layer1.AllSmartContracts, error) {
 	logger.Info("Connecting to Ethereum endpoint ...")

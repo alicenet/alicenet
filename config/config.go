@@ -4,12 +4,21 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/spf13/cobra"
 	"io"
 	"os"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+)
+
+// Variables set by goreleaser process: https://goreleaser.com/cookbooks/using-main.version.
+var (
+	// Version from git tag.
+	//version               = "dev"
+	//Version               = "dev"
+	defaultConfigLocation = "/.alicenet/mainnet/config.toml"
 )
 
 // Setting contains string only command line arguments in Key=>Next form.
@@ -189,4 +198,9 @@ func (settings Settings) GetString(name string) (string, bool) {
 	logrus.WithFields(logrus.Fields{"Key": name, "Next": val, "Present": present}).Debug("GetString")
 
 	return val, present
+}
+
+func LoadConfig(options []*cobra.Command, logger *logrus.Logger, defaultCmd *cobra.Command, hierachy map[*cobra.Command]*cobra.Command) {
+	setDefaultCommandIfNonePresent(defaultCmd, logger)
+	initialiseDataFromConfigFile(logger, options, hierachy)
 }

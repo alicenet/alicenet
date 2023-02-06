@@ -33,7 +33,7 @@ type Response struct {
 
 var ErrNoConn = fmt.Errorf("no conn")
 
-var Command = cobra.Command{
+var Command = &cobra.Command{
 	Use:   "firewalld",
 	Short: "Continously updates a given firewall in the background",
 	Long:  "Continously updates a given firewall using values received over IPC from main AliceNet process",

@@ -14,7 +14,7 @@ import (
 )
 
 // Command is the cobra.Command specifically for initializing the alicenet client.
-var Command = cobra.Command{
+var Command = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize the files/folders required for running the alicenet client",
 	Long:  "Initialize the files/folders required for running the alicenet client",
@@ -26,6 +26,13 @@ const (
 	mainNetFactoryAddress = "0x758a3B3D8958d3794F2Def31e943Cdc449bB2FB9"
 	mainNetStartingBlock  = 15540020
 )
+
+func init() {
+	Command.Flags().StringVarP(&config.Configuration.Initialization.Path, "init.path", "p", "", "path to save the files/folders")
+	Command.Flags().StringVarP(&config.Configuration.Initialization.Network, "init.network", "n", "", "network environment to use (testnet, mainnet)")
+	Command.Flags().BoolVar(&config.Configuration.Initialization.GenerateKeys, "init.generateKeys", false, "generates the private key using random password")
+	Command.Flags().StringVar(&config.Configuration.Ethereum.Endpoint, "init.ethereumEndpoint", "", "ethereum endpoint that will be used to communicate with the chain")
+}
 
 func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 	logger := logging.GetLogger("init").WithField("Component", cmd.Use)
@@ -106,6 +113,7 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 	var err error
 	defaultAccount := "<0xETHEREUM_ADDRESS>"
 	generatePrivateKey := true
+	logger.Infof("Keys ", config.Configuration.Initialization.GenerateKeys)
 	if !config.Configuration.Initialization.GenerateKeys {
 		generatePrivateKey, err = ethkey.ReadYesOrNoAnswer("Do you wish to create your address and private key? Yes/no: ")
 		if err != nil {

@@ -4,7 +4,7 @@
     "fullyQualifiedName": "contracts/AliceNetFactory.sol:AliceNetFactory",
     "salt": "",
     "constructorArgs": {
-      "legacyToken_": "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      "legacyToken_": "0x357756BE43F4feff0528BAB2BE6aC02B2cA2aD55"
     },
     "initializerArgs": {}
   },

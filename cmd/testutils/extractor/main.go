@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"strings"
 )
 
 func main() {
-	network := flag.String("n", "", "network name.")
 	filePath := flag.String("p", "", "file path.")
 	flag.Parse()
 
@@ -17,21 +15,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("Could not read file: %v with error %v", *filePath, err))
 	}
-	outerRegex := regexp.MustCompile(fmt.Sprintf(`\[%s\]\ndefaultFactoryAddress = \".*\"\n`, *network))
-	innerRegex := regexp.MustCompile(`defaultFactoryAddress = .*`)
+	outerRegex := regexp.MustCompile(`Deployed AliceNetFactory at address: (.*),.*`)
 	matchedOuter := outerRegex.FindAllSubmatch(bytes, -1)
-	for i := 0; i < len(matchedOuter); i++ {
-		var innerSentence string
-		for j := 0; j < len(matchedOuter[i]); j++ {
-			innerSentence += string(matchedOuter[i][j])
-		}
-		matchedInner := innerRegex.FindAllSubmatch([]byte(innerSentence), -1)
-		tempResult := matchedInner[0]
-		var sentence string
-		for j := 0; j < len(tempResult); j++ {
-			sentence += string(tempResult[j])
-		}
-		splitBySpace := strings.Split(sentence, " ")
-		fmt.Printf("%s", splitBySpace[len(splitBySpace)-1])
-	}
+	fmt.Printf("%s", matchedOuter[0][1])
 }
