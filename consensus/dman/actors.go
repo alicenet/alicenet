@@ -6,28 +6,25 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dgraph-io/badger/v2"
-	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
-
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/middleware"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
 
-const (
-	backoffAmount = 1 // 1 ms backoff per
-	retryMax      = 6 // equates to approx 4 seconds
-)
+const backoffAmount = 1 // 1 ms backoff per
+const retryMax = 6      // equates to approx 4 seconds
 
 // RootActor spawns top level actor types for download manager.
 // This system allows the synchronously run consensus algorithm to request the
-// download of tx state and blocks from remote peers as a background task.
+// download of tx data and blocks from remote peers as a background task.
 // The system keeps a record of all pending downloads to prevent double entry
-// and stores all state requested into a hot cache that is flushed to disk
+// and stores all data requested into a hot cache that is flushed to disk
 // by the synchronous code. This system will retry failed requests until
 // the height lag is raised to a point that invalidates the given
 // request.
@@ -80,7 +77,6 @@ func (a *RootActor) Close() {
 	})
 }
 
-// TODO verify blockheader cache is being cleaned.
 func (a *RootActor) FlushCacheToDisk(txn *badger.Txn, height uint32) error {
 	txList, txHashList := a.txc.GetHeight(height + 1)
 	for i := 0; i < len(txList); i++ {
@@ -95,11 +91,10 @@ func (a *RootActor) FlushCacheToDisk(txn *badger.Txn, height uint32) error {
 	return nil
 }
 
-// CleanCache flushes all items older than 5 blocks from cache.
+// CleanCache flushes all items older than 5 blocks from cache
 func (a *RootActor) CleanCache(txn *badger.Txn, height uint32) error {
 	a.Lock()
 	defer a.Unlock()
-
 	if height > 10 {
 		dropKeys := a.bhc.DropBeforeHeight(height - 5)
 		dropKeys = append(dropKeys, a.txc.DropBeforeHeight(height-5)...)
@@ -110,63 +105,63 @@ func (a *RootActor) CleanCache(txn *badger.Txn, height uint32) error {
 	return nil
 }
 
-// DownloadPendingTx downloads txs that are pending from remote peers.
+// DownloadPendingTx downloads txs that are pending from remote peers
 func (a *RootActor) DownloadPendingTx(height, round uint32, txHash []byte) {
 	req := NewTxDownloadRequest(txHash, PendingTxRequest, height, round)
-	a.download(req, false)
+	a.download(req, retryMax)
 }
 
-// DownloadPendingTx downloads txs that are mined from remote peers.
+// DownloadPendingTx downloads txs that are mined from remote peers
 func (a *RootActor) DownloadMinedTx(height, round uint32, txHash []byte) {
 	req := NewTxDownloadRequest(txHash, MinedTxRequest, height, round)
-	a.download(req, false)
+	a.download(req, retryMax)
 }
 
 func (a *RootActor) DownloadTx(height, round uint32, txHash []byte) {
 	req := NewTxDownloadRequest(txHash, PendingAndMinedTxRequest, height, round)
-	a.download(req, false)
+	a.download(req, retryMax)
 }
 
-// DownloadBlockHeader downloads block headers from remote peers.
+// DownloadBlockHeader downloads block headers from remote peers
 func (a *RootActor) DownloadBlockHeader(height, round uint32) {
 	req := NewBlockHeaderDownloadRequest(height, round, BlockHeaderRequest)
-	a.download(req, false)
+	a.download(req, retryMax)
 }
 
-func (a *RootActor) download(b DownloadRequest, retry bool) {
+func (a *RootActor) download(b DownloadRequest, retryCounter uint8) {
 	select {
 	case <-a.closeChan:
 		return
 	default:
 		a.wg.Add(1)
-		go a.doDownload(b, retry)
+		go a.doDownload(b, retryCounter)
 	}
 }
 
-func (a *RootActor) doDownload(b DownloadRequest, retry bool) {
+func (a *RootActor) doDownload(b DownloadRequest, retryCounter uint8) {
 	defer a.wg.Done()
 	switch b.DownloadType() {
 	case PendingTxRequest, MinedTxRequest:
-		ok := func() bool {
+		isItSupposedToRetry := func() bool {
 			a.Lock()
 			defer a.Unlock()
 			if a.txc.Contains([]byte(b.Identifier())) {
 				return false
 			}
 			if _, exists := a.reqs[b.Identifier()]; exists {
-				return retry
+				return retryCounter > 0
 			}
 			a.reqs[b.Identifier()] = true
 			return true
 		}()
-		if !ok {
+		if !isItSupposedToRetry {
 			return
 		}
 		select {
 		case <-a.closeChan:
 			return
 		case a.dispatchQ <- b:
-			a.await(b)
+			a.await(b, retryCounter)
 		}
 	case PendingAndMinedTxRequest:
 		ok := func() bool {
@@ -206,7 +201,7 @@ func (a *RootActor) doDownload(b DownloadRequest, retry bool) {
 			case <-a.closeChan:
 				return
 			case a.dispatchQ <- bc0:
-				a.await(bc0)
+				a.await(bc0, retryCounter)
 			}
 		}()
 		go func() {
@@ -215,7 +210,7 @@ func (a *RootActor) doDownload(b DownloadRequest, retry bool) {
 			case <-a.closeChan:
 				return
 			case a.dispatchQ <- bc1:
-				a.await(bc1)
+				a.await(bc1, retryCounter)
 			}
 		}()
 		select {
@@ -235,33 +230,33 @@ func (a *RootActor) doDownload(b DownloadRequest, retry bool) {
 			}
 		}
 	case BlockHeaderRequest:
-		ok := func() bool {
+		isItSupposedToRetry := func() bool {
 			a.Lock()
 			defer a.Unlock()
 			if a.bhc.Contains(b.RequestHeight()) {
 				return false
 			}
 			if _, exists := a.reqs[b.Identifier()]; exists {
-				return retry
+				return retryCounter > 0
 			}
 			a.reqs[b.Identifier()] = true
 			return true
 		}()
-		if !ok {
+		if !isItSupposedToRetry {
 			return
 		}
 		select {
 		case <-a.closeChan:
 			return
 		case a.dispatchQ <- b:
-			a.await(b)
+			a.await(b, retryCounter)
 		}
 	default:
 		panic(b.DownloadType())
 	}
 }
 
-func (a *RootActor) await(req DownloadRequest) {
+func (a *RootActor) await(req DownloadRequest, retryCounter uint8) {
 	select {
 	case <-a.closeChan:
 		return
@@ -276,7 +271,9 @@ func (a *RootActor) await(req DownloadRequest) {
 				exists := a.txc.Contains(r.TxHash)
 				if !exists {
 					utils.DebugTrace(a.logger, r.Err)
-					defer a.download(req, true)
+					if retryCounter > 0 {
+						defer a.download(req, retryCounter-1)
+					}
 				}
 				return
 			}
@@ -290,12 +287,16 @@ func (a *RootActor) await(req DownloadRequest) {
 			if ok {
 				return
 			}
-			defer a.download(req, true)
+			if retryCounter > 0 {
+				defer a.download(req, retryCounter-1)
+			}
 		case BlockHeaderRequest:
 			r := resp.(*BlockHeaderDownloadResponse)
 			if r.Err != nil {
 				utils.DebugTrace(a.logger, r.Err)
-				defer a.download(req, true)
+				if retryCounter > 0 {
+					defer a.download(req, retryCounter-1)
+				}
 				return
 			}
 			ok := func() bool {
@@ -308,16 +309,16 @@ func (a *RootActor) await(req DownloadRequest) {
 			if ok {
 				return
 			}
-			defer a.download(req, true)
-		case PendingAndMinedTxRequest:
-			fallthrough
+			if retryCounter > 0 {
+				defer a.download(req, retryCounter-1)
+			}
 		default:
 			panic(req.DownloadType())
 		}
 	}
 }
 
-// block actor does height based filter drop on requests.
+// block actor does height based filter drop on requests
 type blockActor struct {
 	sync.RWMutex
 	ra            *downloadActor
@@ -398,8 +399,6 @@ func (a *blockActor) await(req DownloadRequest) {
 			return
 		case a.dispatchQ <- subReq:
 		}
-	case PendingAndMinedTxRequest:
-		fallthrough
 	default:
 		panic(fmt.Sprintf("req download type not found: %v", req.DownloadType()))
 	}
@@ -431,7 +430,7 @@ func (a *blockActor) await(req DownloadRequest) {
 	}
 }
 
-// download actor does download dispatch based on request type to worker pools.
+// download actor does download dispatch based on request type to worker pools
 type downloadActor struct {
 	WorkQ            chan DownloadRequest
 	PendingDispatchQ chan *TxDownloadRequest
@@ -501,8 +500,6 @@ func (a *downloadActor) run() {
 					a.bha.start()
 					a.BlockDispatchQ <- req.(*BlockHeaderDownloadRequest)
 				}
-			case PendingAndMinedTxRequest:
-				fallthrough
 			default:
 				panic(req.DownloadType())
 			}
@@ -687,6 +684,7 @@ func (a *blockHeaderDownloadActor) run() {
 		select {
 		case <-time.After(10 * time.Second):
 			a.Lock()
+
 			if a.numWorkers > 1 {
 				a.numWorkers--
 				a.Unlock()

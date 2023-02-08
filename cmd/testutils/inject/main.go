@@ -29,13 +29,14 @@ import (
 	"github.com/alicenet/alicenet/localrpc"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	ethCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/sirupsen/logrus"
 )
 
 const (
+	chunkSize           = 50
 	sentValuePerChild   = uint64(5_000000000000000000)
 	ethDepositAmount    = "1000000000000000000000000"
 	dataStoreSizeOffset = int(constants.MaxDataStoreSize / 200000)
@@ -53,11 +54,12 @@ func (e *ErrNotEnoughFundsForDataStore) Error() string {
 }
 
 type fees struct {
-	minTxFee      *uint256.Uint256
-	valueStoreFee *uint256.Uint256
-	dataStoreFee  *uint256.Uint256
+	minTxFee      *uint256.Uint256 // The minimum transaction fee accounting for all fees.
+	valueStoreFee *uint256.Uint256 // The value store fee.
+	dataStoreFee  *uint256.Uint256 // The data store fee.
 }
 
+// randStringBytes generates a random string of length n.
 func randStringBytes(n int) string {
 	b := make([]byte, n)
 	for i := range b {
@@ -66,6 +68,7 @@ func randStringBytes(n int) string {
 	return string(b)
 }
 
+// uint256ToDecimalString converts a uint256 to a decimal string.
 func uint256ToDecimalString(v *uint256.Uint256) string {
 	bigInt, err := v.ToBigInt()
 	if err != nil {
@@ -74,6 +77,8 @@ func uint256ToDecimalString(v *uint256.Uint256) string {
 	return bigInt.String()
 }
 
+// computeFinalDataStoreFee computes the final data store fee by multiplying the data store fee by
+// the number of epochs + 2.
 func computeFinalDataStoreFee(dataStoreFee *uint256.Uint256, numEpochs32 uint32) *uint256.Uint256 {
 	numEpochs, err := new(uint256.Uint256).FromUint64(uint64(numEpochs32))
 	if err != nil {
@@ -90,6 +95,7 @@ func computeFinalDataStoreFee(dataStoreFee *uint256.Uint256, numEpochs32 uint32)
 	return totalFeeUint256
 }
 
+// sleepWithContext sleeps for `sleepTime` or until the context is done.
 func sleepWithContext(ctx context.Context, sleepTime time.Duration) error {
 	select {
 	case <-ctx.Done():
@@ -125,6 +131,8 @@ func setupRPCClient(ctx context.Context, logger *logrus.Entry, rpcNodeList []str
 	return nodes, nil
 }
 
+// setupTestingSigner returns a signer and the corresponding account address. Theres a 50% chance
+// that the signer is a BNSigner and a 50% chance that it's a Secp256k1Signer.
 func setupTestingSigner(i int) (aobjs.Signer, []byte, error) {
 	privk := crypto.Hasher([]byte(strconv.Itoa(i)))
 	if i%2 == 0 {
@@ -133,6 +141,7 @@ func setupTestingSigner(i int) (aobjs.Signer, []byte, error) {
 	return setupBNSigner(privk)
 }
 
+// setupBNSigner returns a BNSigner and the corresponding account address.
 func setupBNSigner(privk []byte) (*crypto.BNSigner, []byte, error) {
 	signer := &crypto.BNSigner{}
 	err := signer.SetPrivk(privk)
@@ -147,6 +156,8 @@ func setupBNSigner(privk []byte) (*crypto.BNSigner, []byte, error) {
 	return signer, acct, nil
 }
 
+// setupHexSigner returns a Secp256k1Signer and the corresponding account address from private key
+// in hex
 func setupHexSigner(privk string) (*crypto.Secp256k1Signer, []byte, error) {
 	privkb, err := hex.DecodeString(privk)
 	if err != nil {
@@ -155,6 +166,8 @@ func setupHexSigner(privk string) (*crypto.Secp256k1Signer, []byte, error) {
 	return setupSecpSigner(privkb)
 }
 
+// setupSecpSigner returns a Secp256k1Signer and the corresponding account address from private key
+// in bytes
 func setupSecpSigner(privk []byte) (*crypto.Secp256k1Signer, []byte, error) {
 	signer := &crypto.Secp256k1Signer{}
 	if err := signer.SetPrivk(privk); err != nil {
@@ -168,6 +181,8 @@ func setupSecpSigner(privk []byte) (*crypto.Secp256k1Signer, []byte, error) {
 	return signer, acct, nil
 }
 
+// setupTestingSigners returns the curve spec (elliptic curve used to create the signer). The signer
+// is either a BNSigner or a Secp256k1Signer.
 func getCurveSpec(s aobjs.Signer) constants.CurveSpec {
 	curveSpec := constants.CurveSpec(0)
 	switch s.(type) {
@@ -223,6 +238,7 @@ func (w *worker) run(ctx context.Context) {
 		err := sleepWithContext(w.f.ctx, time.Second*time.Duration(1+w.idx%10))
 		if err != nil {
 			w.logger.Errorf("exiting context finished: %v", err)
+			w.f.poolStatus.incrementFailed()
 			return
 		}
 		w.logger.Trace("gettingFunding")
@@ -263,9 +279,49 @@ func (w *worker) run(ctx context.Context) {
 		err = w.f.blockingSendTx(w.client, w.logger, tx, w.f.sendTxAllClients)
 		if err != nil {
 			w.logger.Errorf("error at blockingSendTx: %v", err)
+			w.f.poolStatus.incrementFailed()
+			return
 		}
+		w.f.poolStatus.incrementSuccessful()
 		return
 	}
+}
+
+type workerPoolStatus struct {
+	lock              sync.RWMutex
+	successfulCounter int
+	failedCounter     int
+}
+
+func (w *workerPoolStatus) incrementSuccessful() {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+	w.successfulCounter++
+}
+
+func (w *workerPoolStatus) incrementFailed() {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+	w.failedCounter++
+}
+
+func (w *workerPoolStatus) reset() {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+	w.successfulCounter = 0
+	w.failedCounter = 0
+}
+
+func (w *workerPoolStatus) getSuccessful() int {
+	w.lock.RLock()
+	defer w.lock.RUnlock()
+	return w.successfulCounter
+}
+
+func (w *workerPoolStatus) getFailed() int {
+	w.lock.RLock()
+	defer w.lock.RUnlock()
+	return w.failedCounter
 }
 
 type funder struct {
@@ -276,30 +332,38 @@ type funder struct {
 	mainClient       *localrpc.Client
 	chainID          uint32
 	acct             []byte
-	ethAcct          accounts.Account
+	funderAddress    common.Address
 	ethClient        *evm.Client
 	ethContracts     layer1.AllSmartContracts
 	ethTxWatcher     *transaction.FrontWatcher
 	clientList       []*localrpc.Client
 	sendTxAllClients bool
+	poolStatus       *workerPoolStatus
 }
 
 func createNewFunder(
 	ctx context.Context,
 	logger *logrus.Entry,
 	ethClient *evm.Client,
-	ethAccount accounts.Account,
+	funderID int,
 	ethWatcher *transaction.FrontWatcher,
 	ethContracts layer1.AllSmartContracts,
 	nodeList []string,
 	sendTxAllNodes bool,
 ) (*funder, error) {
 	logger.Info("Funder setting up signing")
-	signer, acct, err := setupHexSigner(tests.TestAdminPrivateKey)
+	privateKey := fmt.Sprintf("%x", crypto.Hasher([]byte(strconv.Itoa(funderID))))
+	signer, acct, err := setupHexSigner(privateKey)
 	if err != nil {
 		logger.Errorf("Funder error at setupHexSigner: %v", err)
 		return nil, err
 	}
+	funderPk, err := ethCrypto.HexToECDSA(privateKey)
+	if err != nil {
+		logger.Errorf("Funder error at HexToECDSA: %v", err)
+		return nil, err
+	}
+	logger.Infof("Funder address: %v", ethCrypto.PubkeyToAddress(funderPk.PublicKey).Hex())
 	logger.Info("Funder setting up client")
 	nodes, err := setupRPCClient(ctx, logger, nodeList, 0)
 	if err != nil {
@@ -319,12 +383,13 @@ func createNewFunder(
 		mainClient:       nodes[0],
 		chainID:          chainID,
 		acct:             acct,
-		ethAcct:          ethAccount,
+		funderAddress:    ethCrypto.PubkeyToAddress(funderPk.PublicKey),
 		ethClient:        ethClient,
 		ethContracts:     ethContracts,
 		ethTxWatcher:     ethWatcher,
 		clientList:       nodes,
 		sendTxAllClients: sendTxAllNodes,
+		poolStatus:       &workerPoolStatus{},
 	}, nil
 }
 
@@ -373,8 +438,11 @@ func (f *funder) sendDataStores(numDataStores uint32, msg string, index string, 
 	}
 }
 
-func (f *funder) startSpamming(numWorkers int) {
-	baseIdx := 0
+func (f *funder) startSpamming(numWorkers, baseIdx int) {
+	numChildren, err := new(uint256.Uint256).FromUint64(uint64(numWorkers))
+	if err != nil {
+		f.logger.Fatalf("failed to convert uint256-1 %v", err)
+	}
 
 	sentValuePerChildBigInt, err := new(uint256.Uint256).FromUint64(sentValuePerChild)
 	if err != nil {
@@ -385,78 +453,59 @@ func (f *funder) startSpamming(numWorkers int) {
 	if err != nil {
 		f.logger.Fatalf("failed to convert uint256-3 %v", err)
 	}
-
+	totalFunding, err := new(uint256.Uint256).Mul(fundingPerChild, numChildren)
+	if err != nil {
+		f.logger.Fatalf("failed to convert uint256-4 %v", err)
+	}
 	for {
 		select {
 		case <-f.ctx.Done():
 			return
 		default:
 		}
-
 		children, err := f.setupChildren(f.ctx, numWorkers, baseIdx)
 		if err != nil {
 			f.logger.Fatalf("Funder error at setupChildren: %v", err)
 		}
 		f.logger.Info("Funder setting up funding")
-		chunkSize := 50
-		if len(children) > chunkSize {
-			chuckSizeUint256, err := new(uint256.Uint256).FromUint64(uint64(chunkSize))
-			if err != nil {
-				f.logger.Fatalf("failed to convert uint256-1 %v", err)
-			}
-			totalFunding, err := new(uint256.Uint256).Mul(fundingPerChild, chuckSizeUint256)
-			if err != nil {
-				f.logger.Fatalf("failed to convert uint256-4 %v", err)
-			}
-			for i := 0; i <= len(children)/chunkSize; i++ {
-				//batchSize := chunkSize
-				start := i * chunkSize
-				end := (i + 1) * chunkSize
-				if end > len(children) {
-					end = len(children)
-				}
 
-				utxos, value, err := f.blockingGetFunding(f.mainClient, getCurveSpec(f.signer), f.acct, totalFunding)
-				if err != nil {
-					f.logger.Errorf("error at blockingGetFunding1: %v", err)
-					continue
-				}
-				for {
-					select {
-					case <-f.ctx.Done():
-						return
-					case <-time.After(time.Second):
-					}
-					if value.Gte(totalFunding) {
-						break
-					}
-					f.logger.Info("Not enough funds, creating deposit on ethereum")
-					err := f.mintALCBDepositOnEthereum()
-					if err != nil {
-						f.logger.Errorf("error at mintALCBDepositOnEthereum: %v", err)
-						continue
-					}
-					utxos, value, err = f.blockingGetFunding(f.mainClient, getCurveSpec(f.signer), f.acct, totalFunding)
-					if err != nil {
-						f.logger.Errorf("error at blockingGetFunding2: %v", err)
-						continue
-					}
-				}
-				f.logger.Infof("Funder setting up tx with %v utxos and total value: %v", len(utxos), uint256ToDecimalString(value))
-
-				tx, err := f.createValueStoreTx(f.logger, f.signer, f.acct, value, utxos, sentValuePerChildBigInt, children[start:end])
-				if err != nil {
-					f.logger.Errorf("Funder error at setupTransaction: %v", err)
-					continue
-				}
-				f.logger.Info("Funder setting up blockingSendTx")
-				if err := f.blockingSendTx(f.mainClient, f.logger, tx, false); err != nil {
-					f.logger.Errorf("Funder error at blockingSendTx: %v", err)
-					continue
-				}
+		utxos, value, err := f.blockingGetFunding(f.mainClient, getCurveSpec(f.signer), f.acct, totalFunding)
+		if err != nil {
+			f.logger.Errorf("error at blockingGetFunding1: %v", err)
+			continue
+		}
+		for {
+			select {
+			case <-f.ctx.Done():
+				return
+			case <-time.After(time.Second):
+			}
+			if value.Gte(totalFunding) {
+				break
+			}
+			f.logger.Info("Not enough funds, creating deposit on ethereum")
+			err := f.mintALCBDepositOnEthereum()
+			if err != nil {
+				f.logger.Errorf("error at mintALCBDepositOnEthereum: %v", err)
+				continue
+			}
+			utxos, value, err = f.blockingGetFunding(f.mainClient, getCurveSpec(f.signer), f.acct, totalFunding)
+			if err != nil {
+				f.logger.Errorf("error at blockingGetFunding2: %v", err)
+				continue
 			}
 		}
-
+		f.logger.Infof("Funder setting up tx with %v utxos and total value: %v", len(utxos), uint256ToDecimalString(value))
+		tx, err := f.createValueStoreTx(f.logger, f.signer, f.acct, value, utxos, sentValuePerChildBigInt, children)
+		if err != nil {
+			f.logger.Errorf("Funder error at setupTransaction: %v", err)
+			continue
+		}
+		f.logger.Info("Funder setting up blockingSendTx")
+		if err := f.blockingSendTx(f.mainClient, f.logger, tx, false); err != nil {
+			f.logger.Errorf("Funder error at blockingSendTx: %v", err)
+			continue
+		}
 		f.logger.Info("Funder starting children")
 		for _, c := range children {
 			f.wg.Add(1)
@@ -465,15 +514,23 @@ func (f *funder) startSpamming(numWorkers int) {
 		f.logger.Info("Funder waiting for workers to send txs")
 		f.wg.Wait()
 		baseIdx += numWorkers
-		f.logger.Info("All workers finished sending txs!")
+		f.logger.WithFields(
+			*&logrus.Fields{
+				"successfulWorkers": f.poolStatus.getSuccessful(),
+				"failedWorkers":     f.poolStatus.getFailed(),
+			},
+		).Infof("All workers finished sending txs!")
+		f.poolStatus.reset()
 	}
 }
 
+// setupChildren creates a number of workers and returns them. The workers are generated with a
+// random private key and a random index.
 func (f *funder) setupChildren(ctx context.Context, numChildren int, baseIdx int) ([]*worker, error) {
 	workers := []*worker{}
 	for i := 0; i < numChildren; i++ {
 		client := f.clientList[i%len(f.clientList)]
-		signer, acct, err := setupTestingSigner(baseIdx + i)
+		signer, acct, err := setupTestingSigner(baseIdx + i + rand.Int())
 		if err != nil {
 			return nil, err
 		}
@@ -493,6 +550,7 @@ func (f *funder) setupChildren(ctx context.Context, numChildren int, baseIdx int
 	return workers, nil
 }
 
+// getTxFees returns the minimum transaction fee and the value store transaction fee
 func (f *funder) getTxFees() (*fees, error) {
 	feesString, err := f.mainClient.GetTxFees(f.ctx)
 	if err != nil {
@@ -519,6 +577,7 @@ func (f *funder) getTxFees() (*fees, error) {
 	return &fees{minTxFee, vsFee, dsFee}, nil
 }
 
+// createValueStoreTx creates a value store tx with the given value and utxos.
 func (f *funder) createValueStoreTx(
 	logger *logrus.Entry,
 	signer aobjs.Signer,
@@ -591,6 +650,7 @@ func (f *funder) createValueStoreTx(
 	)
 }
 
+// createDataStoreTx creates a datastore transaction with the given parameters.
 func (f *funder) createDataStoreTx(
 	logger *logrus.Entry,
 	signer aobjs.Signer,
@@ -800,7 +860,7 @@ func (f *funder) finalizeTx(
 }
 
 func (f *funder) mintALCBDepositOnEthereum() error {
-	txnOpts, err := f.ethClient.GetTransactionOpts(f.ctx, f.ethAcct)
+	txnOpts, err := f.ethClient.GetTransactionOpts(f.ctx, f.ethClient.GetDefaultAccount())
 	if err != nil {
 		return fmt.Errorf("failed to get transaction options: %v", err)
 	}
@@ -809,14 +869,14 @@ func (f *funder) mintALCBDepositOnEthereum() error {
 	if !ok {
 		f.logger.Fatal("Could not generate deposit amount")
 	}
-	bTokenABI, err := abi.JSON(strings.NewReader(bindings.ALCBMetaData.ABI))
+	alcbABI, err := abi.JSON(strings.NewReader(bindings.ALCBMetaData.ABI))
 	if err != nil {
 		return err
 	}
-	input, err := bTokenABI.Pack(
+	input, err := alcbABI.Pack(
 		"virtualMintDeposit",
 		uint8(1),
-		f.ethAcct.Address,
+		f.funderAddress,
 		depositAmount,
 	)
 	if err != nil {
@@ -829,7 +889,7 @@ func (f *funder) mintALCBDepositOnEthereum() error {
 		input,
 	)
 	if err != nil {
-		return fmt.Errorf("could not send deposit amount to ethereum %v", err)
+		return fmt.Errorf("Could not send deposit amount to ethereum %v", err)
 	}
 	_, err = f.ethTxWatcher.SubscribeAndWait(f.ctx, txn, nil)
 	if err != nil {
@@ -874,8 +934,10 @@ func (f *funder) blockingSendTx(client *localrpc.Client, logger *logrus.Entry, t
 					for _, iterClient := range f.clientList {
 						_, err := iterClient.SendTransaction(f.ctx, tx)
 						if err != nil {
-							logger.Errorf("Sending Tx: %x got err: %v", tx.Vin[0].TXInLinker.TxHash, err)
-							continue
+							if !strings.Contains(err.Error(), "txhandler.PendingTxAdd; duplicate") {
+								logger.Errorf("Sending Tx: %x got err: %v", tx.Vin[0].TXInLinker.TxHash, err)
+								continue
+							}
 						}
 						logger.Tracef("Sending Tx: %x in node: %v", tx.Vin[0].TXInLinker.TxHash, iterClient.Address)
 						sentTxCount++
@@ -927,7 +989,7 @@ func main() {
 		"mode",
 		0,
 		"0 for Spam mode (default mode) which sends a lot of dataStore and valueStore txs and"+
-			"1 for DataStore mode which inserts mode only send 3 data store transactions)",
+			" 1 for DataStore mode which inserts mode only send 3 data store transactions)",
 	)
 	workerNumberPtr := flag.Int("workers", 10, "Number workers to send txs in the spam mode.")
 	dataPtr := flag.String("data", "", "Data to write to state store in case dataStore mode.")
@@ -962,7 +1024,7 @@ func main() {
 	})
 	if *modePtr == 0 {
 		logger = logging.GetLogger("test").WithFields(logrus.Fields{
-			"workers": *workerNumberPtr,
+			"totalWorkers": *workerNumberPtr,
 		})
 	} else {
 		logger = logging.GetLogger("test").WithFields(logrus.Fields{
@@ -992,6 +1054,17 @@ func main() {
 	mainCtx, cf := context.WithCancel(context.Background())
 	defer cf()
 
+	// channel for closing the app
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		select {
+		case <-signals:
+			cf()
+		}
+	}()
+
 	tempDir, err := os.MkdirTemp("", "spammerdir")
 	if err != nil {
 		logger.Fatalf("failed to create tmp dir: %v", err)
@@ -1002,7 +1075,9 @@ func main() {
 	defer recoverDB.DB().Close()
 
 	keyStorePath, passCodePath, accounts := tests.CreateAccounts(tempDir, 1)
-	eth, err := evm.NewClient(logger.Logger,
+	// account 0 is always the admin
+	eth, err := evm.NewClient(
+		logger.Logger,
 		*ethereumEndPointPtr,
 		keyStorePath,
 		passCodePath,
@@ -1021,36 +1096,62 @@ func main() {
 	watcher := transaction.WatcherFromNetwork(eth, recoverDB, false, constants.TxPollingTime)
 	defer watcher.Close()
 
-	funder, err := createNewFunder(
-		mainCtx,
-		logger,
-		eth,
-		accounts[0],
-		watcher,
-		contracts,
-		nodeList,
-		*sendTxToAllClientsPtr,
-	)
-	if err != nil {
-		logger.Fatalf("failed to create funder: %v", err)
+	var funders []*funder
+	lock := sync.Mutex{}
+	waitGroup := sync.WaitGroup{}
+	for i := 0; i <= *workerNumberPtr/chunkSize; i++ {
+		logger := logger.WithFields(logrus.Fields{
+			"funderID": i,
+		})
+		id := i
+		waitGroup.Add(1)
+		go func() {
+			defer waitGroup.Done()
+			funder, err := createNewFunder(
+				mainCtx,
+				logger,
+				eth,
+				id,
+				watcher,
+				contracts,
+				nodeList,
+				*sendTxToAllClientsPtr,
+			)
+			if err != nil {
+				logger.Fatalf("failed to create funder: %v", err)
+			}
+			lock.Lock()
+			funders = append(funders, funder)
+			lock.Unlock()
+		}()
 	}
-
-	// channel for closing the app
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+	waitGroup.Wait()
 
 	if spamMode {
 		logger.Info("Running in Spam Mode")
-		go funder.startSpamming(*workerNumberPtr)
+		var totalWorkers int
+		for i, funder := range funders {
+			logger.Infof("Starting funder %d", i)
+			batchSize := chunkSize
+			if totalWorkers+batchSize > *workerNumberPtr {
+				batchSize = *workerNumberPtr - totalWorkers
+			}
+			funder.logger = funder.logger.WithFields(logrus.Fields{"workers": batchSize})
+			err := funder.mintALCBDepositOnEthereum()
+			if err != nil {
+				funder.logger.Errorf("error at mintALCBDepositOnEthereum: %v", err)
+				continue
+			}
+			go funder.startSpamming(batchSize, totalWorkers)
+			totalWorkers += batchSize
+		}
 	} else {
 		logger.Logger.SetLevel(logrus.TraceLevel)
 		logger.Info("Running in DataStore Insertion Mode")
-		go funder.sendDataStores(uint32(*dataQuantityPtr), *dataPtr, *dataIndexPtr, uint32(*dataDurationPtr))
+		go funders[0].sendDataStores(uint32(*dataQuantityPtr), *dataPtr, *dataIndexPtr, uint32(*dataDurationPtr))
 	}
-
 	select {
-	case <-signals:
-		cf()
+	case <-mainCtx.Done():
 	}
 	logger.Info("Exiting ...")
 }
