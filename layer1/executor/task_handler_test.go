@@ -59,7 +59,12 @@ func getTaskHandler(
 		})
 	}
 
-	return taskHandler.(*Handler), client, contracts, txWatcher, account
+	taskHandle, ok := taskHandler.(*Handler)
+	if !ok {
+		panic("unable to cast task handle")
+	}
+
+	return taskHandle, client, contracts, txWatcher, account
 }
 
 // getTaskManagerCopy creates a copy of the manager from the DB without race
@@ -358,7 +363,11 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 		handler.manager.adminHandler,
 		handler.manager.taskExecutor.txWatcher,
 	)
-	recoveredTask := newHandler.(*Handler).manager.Schedule[taskId]
+	newHandle, ok := newHandler.(*Handler)
+	if !ok {
+		panic("Unable to cast new handler")
+	}
+	recoveredTask := newHandle.manager.Schedule[taskId]
 	require.Equal(t, task.ID, recoveredTask.Id)
 	require.Equal(t, task.Name, recoveredTask.Name)
 	require.Equal(t, task.Start, recoveredTask.Start)
@@ -380,7 +389,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	resp, err = newHandler.ScheduleTask(task, taskId)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
-	require.Equal(t, 1, getScheduleLen(t, newHandler.(*Handler).manager))
+	require.Equal(t, 1, getScheduleLen(t, newHandle.manager))
 
 	_, err = newHandler.KillTaskById(taskId)
 	require.Nil(t, err)
@@ -399,7 +408,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	blockingResp := resp.GetResponseBlocking(context.Background())
 	require.NotNil(t, blockingResp)
 	require.Equal(t, ErrTaskKilledBeforeExecution, blockingResp)
-	require.Equal(t, 0, getScheduleLen(t, newHandler.(*Handler).manager))
+	require.Equal(t, 0, getScheduleLen(t, newHandle.manager))
 
 	newHandler.Close()
 	newHandler2, err := NewTaskHandler(
@@ -415,7 +424,11 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	resp, err = newHandler2.ScheduleTask(task, taskId)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
-	require.Equal(t, 0, getScheduleLen(t, newHandler2.(*Handler).manager))
+	newHandle2, ok := newHandler2.(*Handler)
+	if !ok {
+		panic("Unable to cast new handler")
+	}
+	require.Equal(t, 0, getScheduleLen(t, newHandle2.manager))
 
 	failTime = time.After(
 		time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second,
@@ -502,23 +515,31 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 		handler.manager.adminHandler,
 		handler.manager.taskExecutor.txWatcher,
 	)
-	recoveredTask := newHandler.(*Handler).manager.Schedule[taskId]
+	newHandle, ok := newHandler.(*Handler)
+	if !ok {
+		panic("Unable to cast new recovered task handle")
+	}
+	recoveredTask := newHandle.manager.Schedule[taskId]
 	require.Equal(t, task.ID, recoveredTask.Id)
 	require.Equal(t, task.Name, recoveredTask.Name)
 	require.Equal(t, task.Start, recoveredTask.Start)
 	require.Equal(t, task.End, recoveredTask.End)
 	require.Equal(t, task.AllowMultiExecution, recoveredTask.AllowMultiExecution)
+	snapShotTask, ok := recoveredTask.Task.(*snapshots.SnapshotTask)
+	if !ok {
+		panic("Unable to cast snap shot task")
+	}
 	require.Equal(
 		t,
 		task.NumOfValidators,
-		recoveredTask.Task.(*snapshots.SnapshotTask).NumOfValidators,
+		snapShotTask.NumOfValidators,
 	)
 	require.Equal(
 		t,
 		task.ValidatorIndex,
-		recoveredTask.Task.(*snapshots.SnapshotTask).ValidatorIndex,
+		snapShotTask.ValidatorIndex,
 	)
-	require.Equal(t, task.Height, recoveredTask.Task.(*snapshots.SnapshotTask).Height)
+	require.Equal(t, task.Height, snapShotTask.Height)
 	require.Nil(t, err)
 	newHandler.Start()
 
@@ -532,7 +553,7 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 			t.Fatal("didnt process task in time")
 		default:
 		}
-		taskManagerCopy := getTaskManagerCopy(t, newHandler.(*Handler).manager)
+		taskManagerCopy := getTaskManagerCopy(t, newHandle.manager)
 		taskCopy := taskManagerCopy.Schedule[taskId]
 		isRunning = taskCopy.InternalState == Running
 	}

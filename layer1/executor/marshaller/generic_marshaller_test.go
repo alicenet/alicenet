@@ -58,8 +58,14 @@ func TestRoundTrip(t *testing.T) {
 	uw1, err := tr.UnwrapInstance(ws1)
 	assert.Nil(t, err)
 
-	var uws0 S = uw0.(S)
-	var uws1 S = uw1.(S)
+	uws0, ok := uw0.(S)
+	if !ok {
+		t.Errorf("Unable to cast marshalled value")
+	}
+	uws1, ok := uw1.(S)
+	if !ok {
+		t.Errorf("Unable to cast marshalled value")
+	}
 
 	// Make sure everything worked
 	assert.Equal(t, 6, uws0.Do())

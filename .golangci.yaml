@@ -24,6 +24,7 @@ linters:
     - thelper 
     - tparallel 
     - unused 
+    - forcetypeassert 
   # Disabling linters until we get them fixed up.
   disable:
     - containedctx # 4 issues
@@ -35,7 +36,6 @@ linters:
     - errname # 15 issues
     - errorlint # 17 issues
     - forbidigo # 12 issues
-    - forcetypeassert # 3 issues
     - funlen # 50 issues
     - gci # 3 issues
     - gochecknoglobals # 50 issues

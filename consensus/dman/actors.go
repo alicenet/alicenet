@@ -268,7 +268,10 @@ func (a *RootActor) await(req DownloadRequest) {
 		}
 		switch resp.DownloadType() {
 		case PendingTxRequest, MinedTxRequest:
-			r := resp.(*TxDownloadResponse)
+			r, okay := resp.(*TxDownloadResponse)
+			if !okay {
+				panic("Unable to cast TxDownloadResponse")
+			}
 			if r.Err != nil {
 				exists := a.txc.Contains(r.TxHash)
 				if !exists {
@@ -289,7 +292,10 @@ func (a *RootActor) await(req DownloadRequest) {
 			}
 			defer a.download(req, true)
 		case BlockHeaderRequest:
-			r := resp.(*BlockHeaderDownloadResponse)
+			r, okay := resp.(*BlockHeaderDownloadResponse)
+			if !okay {
+				panic("Unable to cast BlockHeaderDownloadResponse")
+			}
 			if r.Err != nil {
 				utils.DebugTrace(a.logger, r.Err)
 				defer a.download(req, true)
@@ -380,7 +386,10 @@ func (a *blockActor) await(req DownloadRequest) {
 	var subReq DownloadRequest
 	switch req.DownloadType() {
 	case PendingTxRequest, MinedTxRequest:
-		reqTyped := req.(*TxDownloadRequest)
+		reqTyped, okay := req.(*TxDownloadRequest)
+		if !okay {
+			panic("Unable to cast TxDownloadRequest")
+		}
 		subReq = NewTxDownloadRequest(reqTyped.TxHash, reqTyped.Dtype, reqTyped.Height, reqTyped.Round)
 		select {
 		case <-a.closeChan:
@@ -388,7 +397,10 @@ func (a *blockActor) await(req DownloadRequest) {
 		case a.dispatchQ <- subReq:
 		}
 	case BlockHeaderRequest:
-		reqTyped := req.(*BlockHeaderDownloadRequest)
+		reqTyped, okay := req.(*BlockHeaderDownloadRequest)
+		if !okay {
+			panic("Unable to cast BlockHeaderDownloadRequest")
+		}
 		subReq = NewBlockHeaderDownloadRequest(reqTyped.Height, reqTyped.Round, reqTyped.Dtype)
 		select {
 		case <-a.closeChan:
