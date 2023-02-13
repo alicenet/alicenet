@@ -36,6 +36,6 @@ describe("stakingDescriptor: Tests stakingDescriptor methods", async () => {
     )}"}`;
     const tokenUri = await stakingDescriptor.constructTokenURI(inputData);
 
-    await expect(tokenUri).to.be.equal(expectedTokenUriData);
+    expect(tokenUri).to.be.equal(expectedTokenUriData);
   });
 });

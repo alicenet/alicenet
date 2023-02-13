@@ -9,7 +9,7 @@ import { expect } from "../chai-setup";
 import {
   Fixture,
   getFixture,
-  getStakingSVGBase64,
+  getStakingSVG,
   getTokenIdFromTx,
   getValidatorEthAccount,
 } from "../setup";
@@ -73,7 +73,7 @@ describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", a
     beforeEach(async function () {
       positionData = await publicStaking.getPosition(tokenId);
 
-      svg = getStakingSVGBase64(
+      svg = getStakingSVG(
         positionData.shares.toString(),
         positionData.freeAfter.toString(),
         positionData.withdrawFreeAfter.toString()
@@ -108,7 +108,10 @@ describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", a
 
       expect(tokenUri).to.be.equal(expectedTokenUriData);
       expect(
-        atob(parsedJson.image_data.replace("data:image/svg+xml;base64,", ""))
+        Buffer.from(
+          parsedJson.image_data.replace("data:image/svg+xml;base64,", ""),
+          "base64"
+        ).toString()
       ).to.be.equal(svg);
     });
 
@@ -121,7 +124,10 @@ describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", a
 
       expect(tokenUri).to.be.equal(expectedTokenUriData);
       expect(
-        atob(parsedJson.image_data.replace("data:image/svg+xml;base64,", ""))
+        Buffer.from(
+          parsedJson.image_data.replace("data:image/svg+xml;base64,", ""),
+          "base64"
+        ).toString()
       ).to.be.equal(svg);
     });
   });

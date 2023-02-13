@@ -693,5 +693,5 @@ export const getStakingSVGBase64 = (
   withdrawFreeAfter: string
 ) => {
   const svg = getStakingSVG(shares, freeAfter, withdrawFreeAfter);
-  return Buffer.from(svg).toString("utf8");
+  return Buffer.from(svg).toString("base64");
 };
