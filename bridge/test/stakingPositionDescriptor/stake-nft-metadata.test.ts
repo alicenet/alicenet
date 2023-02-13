@@ -9,6 +9,7 @@ import { expect } from "../chai-setup";
 import {
   Fixture,
   getFixture,
+  getStakingSVGBase64,
   getTokenIdFromTx,
   getValidatorEthAccount,
 } from "../setup";
@@ -72,13 +73,11 @@ describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", a
     beforeEach(async function () {
       positionData = await publicStaking.getPosition(tokenId);
 
-      svg =
-        `<svg width="500" height="500" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" xmlns:xlink='http://www.w3.org/1999/xlink'>` +
-        `<text x='10' y='20'>Shares: ${positionData.shares.toString()}</text>` +
-        `<text x='10' y='40'>Free after: ${positionData.freeAfter.toString()}</text>` +
-        `<text x='10' y='60'>Withdraw Free After: ${positionData.withdrawFreeAfter.toString()}</text>` +
-        `<text x='10' y='80'>Accumulator (ETH): ${positionData.accumulatorEth.toString()}</text>` +
-        `<text x='10' y='100'>Accumulator (Token): ${positionData.accumulatorToken.toString()}</text></svg>`;
+      svg = getStakingSVGBase64(
+        positionData.shares.toString(),
+        positionData.freeAfter.toString(),
+        positionData.withdrawFreeAfter.toString()
+      );
 
       tokenUriJson =
         `{"name":"AliceNet Staked Token For Position #${tokenId.toString()}",` +
@@ -90,7 +89,9 @@ describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", a
         `{"trait_type": "Accumulator Eth", "value": "${positionData.accumulatorEth.toString()}"},` +
         `{"trait_type": "Accumulator Token", "value": "${positionData.accumulatorToken.toString()}"},` +
         `{"trait_type": "Token ID", "value": "${tokenId.toString()}"}` +
-        `], "image_data": "data:image/svg+xml;base64,${btoa(svg)}"}`;
+        `], "image_data": "data:image/svg+xml;base64,${Buffer.from(
+          svg
+        ).toString("base64")}"}`;
 
       expectedTokenUriData = `data:application/json;utf8,${tokenUriJson}`;
     });
