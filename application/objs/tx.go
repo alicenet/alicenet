@@ -28,7 +28,8 @@ type Tx struct {
 	Vin  Vin
 	Vout Vout
 	// not part of serialized object below this line
-	txHash []byte
+	txHash      []byte
+	partialHash []byte
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
@@ -324,6 +325,26 @@ func (b *Tx) TxHash() ([]byte, error) {
 }
 
 func (b *Tx) computeTxHash() ([]byte, error) {
+	bytes0 := utils.MarshalUint32(uint32(0))
+	bytes1 := utils.MarshalUint32(uint32(1))
+
+	// Type processing
+	typeBytes := utils.MarshalUint32(b.Type)
+	typeData := []byte{}
+	typeData = append(typeData, bytes0...)
+	typeData = append(typeData, typeBytes...)
+	typeLeaf := txhash.LeafHash(typeData)
+
+	// Data processing
+	dataBytes := utils.CopySlice(b.Data)
+	dataData := []byte{}
+	dataData = append(dataData, bytes1...)
+	dataData = append(dataData, dataBytes...)
+	dataLeaf := txhash.LeafHash(dataData)
+
+	// Initial processing
+	tmp1 := txhash.HashPair(typeLeaf, dataLeaf)
+
 	if b.Type == 0 {
 		if len(b.Data) != 0 {
 			return nil, errorz.ErrInvalid{}.New("tx.computeTxHash: Type 0; invalid data")
@@ -334,54 +355,178 @@ func (b *Tx) computeTxHash() ([]byte, error) {
 		if len(b.Vout) == 0 {
 			return nil, errorz.ErrInvalid{}.New("tx.computeTxHash: Type 0; invalid Vout")
 		}
-		bytes0 := utils.MarshalUint32(uint32(0))
-		bytes1 := utils.MarshalUint32(uint32(1))
-		bytes2 := utils.MarshalUint32(uint32(2))
-
-		// Type processing
-		typeBytes := utils.MarshalUint32(b.Type)
-		typeData := []byte{}
-		typeData = append(typeData, bytes0...)
-		typeData = append(typeData, typeBytes...)
-		typeLeaf := txhash.LeafHash(typeData)
-
-		// Data processing
-		dataData := bytes1
-		dataLeaf := txhash.LeafHash(dataData)
 
 		// TxIn processing
-		txinData := [][]byte{}
-		for _, txIn := range b.Vin {
-			id, err := txIn.UTXOID()
-			if err != nil {
-				return nil, err
-			}
-			tmp := append(utils.CopySlice(bytes2), id...)
-			txinData = append(txinData, tmp)
+		vinHash, err := b.computeVinHash(0, len(b.Vin))
+		if err != nil {
+			return nil, err
 		}
-		vinHash := txhash.ComputeMerkleRoot(txinData)
 
 		// UTXO processing
-		utxoData := [][]byte{}
-		for idx, txOut := range b.Vout {
-			hsh, err := txOut.PreHash()
-			if err != nil {
-				return nil, err
-			}
-			id := MakeUTXOID(hsh, uint32(idx))
-			tmp := append(utils.CopySlice(bytes2), id...)
-			utxoData = append(utxoData, tmp)
+		voutHash, err := b.computeVoutHash(0, len(b.Vout))
+		if err != nil {
+			return nil, err
 		}
-		voutHash := txhash.ComputeMerkleRoot(utxoData)
 
-		// Complete processing
-		tmp1 := txhash.HashPair(typeLeaf, dataLeaf)
+		// Finish processing
 		tmp2 := txhash.HashPair(vinHash, voutHash)
 		root := txhash.HashPair(tmp1, tmp2)
 		return root, nil
 	} else {
 		return nil, errorz.ErrInvalid{}.New("tx.computeTxHash: invalid type")
 	}
+}
+
+// PartialHash calculates the partial hash of the transaction.
+//
+// At this point, PartialHash is only defined for tx.Type == 1.
+// We must have len(tx.data) == 8;
+// the data stores the concatenation of
+func (b *Tx) PartialHash() ([]byte, error) {
+	if b == nil {
+		return nil, errorz.ErrInvalid{}.New("tx.PartialHash: tx not initialized")
+	}
+	if b.Fee == nil {
+		return nil, errorz.ErrInvalid{}.New("tx.PartialHash: tx.fee not initialized")
+	}
+	if b.partialHash != nil {
+		return utils.CopySlice(b.partialHash), nil
+	}
+	if err := b.Vout.SetTxOutIdx(); err != nil {
+		return nil, err
+	}
+	partialHash, err := b.computePartialHash()
+	if err != nil {
+		return nil, err
+	}
+	b.partialHash = partialHash
+	return utils.CopySlice(b.partialHash), nil
+}
+
+func (b *Tx) computePartialHash() ([]byte, error) {
+	bytes0 := utils.MarshalUint32(uint32(0))
+	bytes1 := utils.MarshalUint32(uint32(1))
+	//bytes2 := utils.MarshalUint32(uint32(2))
+
+	// Type processing
+	typeBytes := utils.MarshalUint32(b.Type)
+	typeData := []byte{}
+	typeData = append(typeData, bytes0...)
+	typeData = append(typeData, typeBytes...)
+	typeLeaf := txhash.LeafHash(typeData)
+
+	// Data processing
+	dataBytes := utils.CopySlice(b.Data)
+	dataData := []byte{}
+	dataData = append(dataData, bytes1...)
+	dataData = append(dataData, dataBytes...)
+	dataLeaf := txhash.LeafHash(dataData)
+
+	// Initial processing
+	tmp1 := txhash.HashPair(typeLeaf, dataLeaf)
+
+	if b.Type == 1 {
+		if len(b.Data) != 8 {
+			return nil, errorz.ErrInvalid{}.New("tx.computePartialHash: Type 1; invalid data")
+		}
+		vinPartialLen, err := utils.UnmarshalUint32(b.Data[0:4])
+		if err != nil {
+			return nil, err
+		}
+		if int(vinPartialLen) == 0 {
+			return nil, errorz.ErrInvalid{}.New("tx.computePartialHash: Type 1; require vinPartialLen > 0")
+		}
+		voutPartialLen, err := utils.UnmarshalUint32(b.Data[4:8])
+		if err != nil {
+			return nil, err
+		}
+		if len(b.Vin) < int(vinPartialLen) {
+			return nil, errorz.ErrInvalid{}.New("tx.computePartialHash: Type 1; invalid Vin length")
+		}
+		if len(b.Vout) < int(voutPartialLen) {
+			return nil, errorz.ErrInvalid{}.New("tx.computePartialHash: Type 1; invalid Vout length")
+		}
+
+		// TxIn processing
+		vinPartialHash, err := b.computeVinHash(0, int(vinPartialLen))
+		if err != nil {
+			return nil, err
+		}
+
+		// UTXO processing
+		voutPartialHash, err := b.computeVoutHash(0, int(voutPartialLen))
+		if err != nil {
+			return nil, err
+		}
+
+		// Finish processing
+		tmp2 := txhash.HashPair(vinPartialHash, voutPartialHash)
+		partialHash := txhash.HashPair(tmp1, tmp2)
+		return partialHash, nil
+	} else {
+		return nil, errorz.ErrInvalid{}.New("tx.computePartialHash: invalid type")
+	}
+}
+
+func (b *Tx) computeVinHash(start, stop int) ([]byte, error) {
+	if len(b.Vin) < int(stop) {
+		return nil, errorz.ErrInvalid{}.New("tx.computeVinHash: invalid Vin length")
+	}
+	if start > stop {
+		return nil, errorz.ErrInvalid{}.New("tx.computeVinHash: invalid start/stop")
+	}
+
+	bytes2 := utils.MarshalUint32(uint32(2))
+	// Empty tree
+	if start == stop {
+		emptyLeaf := txhash.LeafHash(bytes2)
+		return emptyLeaf, nil
+	}
+
+	// TxIn processing
+	txinData := [][]byte{}
+	for idx := start; idx < stop; idx++ {
+		txIn := b.Vin[idx]
+		id, err := txIn.UTXOID()
+		if err != nil {
+			return nil, err
+		}
+		tmp := append(utils.CopySlice(bytes2), id...)
+		txinData = append(txinData, tmp)
+	}
+	vinHash := txhash.ComputeMerkleRoot(txinData)
+	return vinHash, nil
+}
+
+func (b *Tx) computeVoutHash(start, stop int) ([]byte, error) {
+	if len(b.Vout) < int(stop) {
+		return nil, errorz.ErrInvalid{}.New("tx.computeVoutHash: invalid Vout length")
+	}
+	if start > stop {
+		return nil, errorz.ErrInvalid{}.New("tx.computeVoutHash: invalid start/stop")
+	}
+
+	bytes2 := utils.MarshalUint32(uint32(2))
+	// Empty tree
+	if start == stop {
+		emptyLeaf := txhash.LeafHash(bytes2)
+		return emptyLeaf, nil
+	}
+
+	// UTXO processing
+	utxoData := [][]byte{}
+	for idx := start; idx < stop; idx++ {
+		txOut := b.Vout[idx]
+		hsh, err := txOut.PreHash()
+		if err != nil {
+			return nil, err
+		}
+		id := MakeUTXOID(hsh, uint32(idx))
+		tmp := append(utils.CopySlice(bytes2), id...)
+		utxoData = append(utxoData, tmp)
+	}
+	voutHash := txhash.ComputeMerkleRoot(utxoData)
+	return voutHash, nil
 }
 
 // SetTxHash calculates the TxHash and sets it on all UTXOs and TXIns.
