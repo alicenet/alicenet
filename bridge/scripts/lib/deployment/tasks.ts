@@ -473,11 +473,7 @@ export async function upgradeProxyTask(
     CONTRACT_ADDR
   );
   console.log("events", receipt.events);
-  const proxyAddress = getEventVar(
-    receipt,
-    EVENT_DEPLOYED_PROXY,
-    CONTRACT_ADDR
-  );
+  const proxyAddress = await factory.lookup(deploymentConfigForContract.salt);
   await showState(
     `Updating logic for the ${deploymentConfigForContract.name} proxy at ${proxyAddress} to point to implementation at ${implementationAddress}, gasCost: ${receipt.gasUsed}`
   );
