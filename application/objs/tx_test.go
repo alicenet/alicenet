@@ -1049,7 +1049,7 @@ func TestTxValidatePreSignature(t *testing.T) {
 	}
 }
 
-func TestTxComputeTxHashGood(t *testing.T) {
+func TestTxComputeTxHashGood0(t *testing.T) {
 	ownerSigner := &crypto.Secp256k1Signer{}
 	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
 		t.Fatal(err)
@@ -1153,6 +1153,118 @@ func TestTxComputeTxHashGood(t *testing.T) {
 	}
 }
 
+func TestTxComputeTxHashGood1(t *testing.T) {
+	ownerSigner := &crypto.Secp256k1Signer{}
+	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
+		t.Fatal(err)
+	}
+
+	// make txins
+	numConsumed := 5
+	consumedUTXOs := Vout{}
+	for i := 0; i < numConsumed; i++ {
+		consumedUTXOs = append(consumedUTXOs, makeVS(t, ownerSigner, 1+i))
+	}
+	err := consumedUTXOs.SetTxOutIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+	txInputs := []*TXIn{}
+	for i := 0; i < numConsumed; i++ {
+		txIn, err := consumedUTXOs[i].MakeTxIn()
+		if err != nil {
+			t.Fatal(err)
+		}
+		txInputs = append(txInputs, txIn)
+	}
+
+	// make utxos
+	generatedUTXOs := Vout{}
+	for i := 0; i < numConsumed; i++ {
+		generatedUTXOs = append(generatedUTXOs, makeVS(t, ownerSigner, 0))
+	}
+	err = generatedUTXOs.SetTxOutIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// make tx
+	vinPartial := uint32(3)
+	voutPartial := uint32(2)
+	vinPartialBytes := utils.MarshalUint32(vinPartial)
+	voutPartialBytes := utils.MarshalUint32(voutPartial)
+	data := []byte{}
+	data = append(data, vinPartialBytes...)
+	data = append(data, voutPartialBytes...)
+	tx := &Tx{
+		Type: 1,
+		Data: data,
+		Vin:  txInputs,
+		Vout: generatedUTXOs,
+		Fee:  uint256.Zero(),
+	}
+	err = tx.SetTxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < numConsumed; i++ {
+		err = consumedUTXOs[i].valueStore.Sign(tx.Vin[i], ownerSigner)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// compute correct txhash value
+	bytes0 := utils.MarshalUint32(0)
+	bytes1 := utils.MarshalUint32(1)
+	// type data
+	typeBytes := utils.MarshalUint32(tx.Type)
+	typeData := append(utils.CopySlice(bytes0), typeBytes...)
+	typeLeaf := txhash.LeafHash(typeData)
+	// data data
+	if len(tx.Data) != 8 {
+		t.Fatal("Should have len(tx.Data) == 8")
+	}
+	dataData := append(utils.CopySlice(bytes1), utils.CopySlice(tx.Data)...)
+	dataLeaf := txhash.LeafHash(dataData)
+
+	///// Partial
+	vinPartialHash, err := tx.computeVinHash(0, int(vinPartial))
+	if err != nil {
+		t.Fatal(err)
+	}
+	voutPartialHash, err := tx.computeVoutHash(0, int(voutPartial))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	///// Complete
+	vinCompleteHash, err := tx.computeVinHash(int(vinPartial), len(tx.Vin))
+	if err != nil {
+		t.Fatal(err)
+	}
+	voutCompleteHash, err := tx.computeVoutHash(int(voutPartial), len(tx.Vout))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// finish computation
+	tmp1 := txhash.HashPair(typeLeaf, dataLeaf)
+	tmp2 := txhash.HashPair(vinPartialHash, voutPartialHash)
+	tmp3 := txhash.HashPair(vinCompleteHash, voutCompleteHash)
+	tmp4 := txhash.HashPair(tmp2, tmp3)
+	trueRoot := txhash.HashPair(tmp1, tmp4)
+
+	// compute txhash
+	txhash, err := tx.computeTxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(txhash, trueRoot) {
+		t.Fatal("invalid txhash computation")
+	}
+}
+
 func TestTxComputeTxHashBad0(t *testing.T) {
 	tx := &Tx{}
 	_, err := tx.computeTxHash()
@@ -1163,7 +1275,7 @@ func TestTxComputeTxHashBad0(t *testing.T) {
 
 func TestTxComputeTxHashBad1(t *testing.T) {
 	tx := &Tx{}
-	tx.Type = 1
+	tx.Type = constants.MaxUint32
 	_, err := tx.computeTxHash()
 	if err == nil {
 		t.Fatal("Should have raised error")
@@ -1186,6 +1298,679 @@ func TestTxComputeTxHashBad3(t *testing.T) {
 	_, err := tx.computeTxHash()
 	if err == nil {
 		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxComputeTxHashBad4(t *testing.T) {
+	tx := &Tx{}
+	tx.Type = 1
+	_, err := tx.computeTxHash()
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxComputeTxHashBad5(t *testing.T) {
+	tx := &Tx{}
+	tx.Type = 1
+	tx.Data = make([]byte, 8)
+	_, err := tx.computeTxHash()
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxComputeTxHashBad6(t *testing.T) {
+	ownerSigner := &crypto.Secp256k1Signer{}
+	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
+		t.Fatal(err)
+	}
+
+	// make txins
+	numConsumed := 5
+	consumedUTXOs := Vout{}
+	for i := 0; i < numConsumed; i++ {
+		consumedUTXOs = append(consumedUTXOs, makeVS(t, ownerSigner, 1+i))
+	}
+	err := consumedUTXOs.SetTxOutIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+	txInputs := []*TXIn{}
+	for i := 0; i < numConsumed; i++ {
+		txIn, err := consumedUTXOs[i].MakeTxIn()
+		if err != nil {
+			t.Fatal(err)
+		}
+		txInputs = append(txInputs, txIn)
+	}
+
+	tx := &Tx{
+		Type: 1,
+		Data: make([]byte, 8),
+		Vin:  txInputs,
+	}
+	_, err = tx.computeTxHash()
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxComputeTxHashBad7(t *testing.T) {
+	ownerSigner := &crypto.Secp256k1Signer{}
+	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
+		t.Fatal(err)
+	}
+
+	// make txins
+	numConsumed := 5
+	consumedUTXOs := Vout{}
+	for i := 0; i < numConsumed; i++ {
+		consumedUTXOs = append(consumedUTXOs, makeVS(t, ownerSigner, 1+i))
+	}
+	err := consumedUTXOs.SetTxOutIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+	txInputs := []*TXIn{}
+	for i := 0; i < numConsumed; i++ {
+		txIn, err := consumedUTXOs[i].MakeTxIn()
+		if err != nil {
+			t.Fatal(err)
+		}
+		txInputs = append(txInputs, txIn)
+	}
+
+	// make utxos
+	generatedUTXOs := Vout{}
+	for i := 0; i < numConsumed; i++ {
+		generatedUTXOs = append(generatedUTXOs, makeVS(t, ownerSigner, 0))
+	}
+	err = generatedUTXOs.SetTxOutIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := &Tx{
+		Type: 1,
+		Data: make([]byte, 8),
+		Vin:  txInputs,
+		Vout: generatedUTXOs,
+	}
+	_, err = tx.computeTxHash()
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxPartialHashGood1(t *testing.T) {
+	ownerSigner := &crypto.Secp256k1Signer{}
+	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
+		t.Fatal(err)
+	}
+
+	// make txins
+	numConsumed := 5
+	consumedUTXOs := Vout{}
+	for i := 0; i < numConsumed; i++ {
+		consumedUTXOs = append(consumedUTXOs, makeVS(t, ownerSigner, 1+i))
+	}
+	err := consumedUTXOs.SetTxOutIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+	txInputs := []*TXIn{}
+	for i := 0; i < numConsumed; i++ {
+		txIn, err := consumedUTXOs[i].MakeTxIn()
+		if err != nil {
+			t.Fatal(err)
+		}
+		txInputs = append(txInputs, txIn)
+	}
+
+	// make utxos
+	generatedUTXOs := Vout{}
+	for i := 0; i < numConsumed; i++ {
+		generatedUTXOs = append(generatedUTXOs, makeVS(t, ownerSigner, 0))
+	}
+	err = generatedUTXOs.SetTxOutIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// make tx
+	vinPartial := uint32(3)
+	voutPartial := uint32(2)
+	vinPartialBytes := utils.MarshalUint32(vinPartial)
+	voutPartialBytes := utils.MarshalUint32(voutPartial)
+	data := []byte{}
+	data = append(data, vinPartialBytes...)
+	data = append(data, voutPartialBytes...)
+	tx := &Tx{
+		Type: 1,
+		Data: data,
+		Vin:  txInputs,
+		Vout: generatedUTXOs,
+		Fee:  uint256.Zero(),
+	}
+	err = tx.SetTxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < numConsumed; i++ {
+		err = consumedUTXOs[i].valueStore.Sign(tx.Vin[i], ownerSigner)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// compute correct txhash value
+	bytes0 := utils.MarshalUint32(0)
+	bytes1 := utils.MarshalUint32(1)
+	// type data
+	typeBytes := utils.MarshalUint32(tx.Type)
+	typeData := append(utils.CopySlice(bytes0), typeBytes...)
+	typeLeaf := txhash.LeafHash(typeData)
+	// data data
+	if len(tx.Data) != 8 {
+		t.Fatal("Should have len(tx.Data) == 8")
+	}
+	dataData := append(utils.CopySlice(bytes1), utils.CopySlice(tx.Data)...)
+	dataLeaf := txhash.LeafHash(dataData)
+
+	///// Partial
+	vinPartialHash, err := tx.computeVinHash(0, int(vinPartial))
+	if err != nil {
+		t.Fatal(err)
+	}
+	voutPartialHash, err := tx.computeVoutHash(0, int(voutPartial))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// finish computation
+	tmp1 := txhash.HashPair(typeLeaf, dataLeaf)
+	tmp2 := txhash.HashPair(vinPartialHash, voutPartialHash)
+	partialHashTrue := txhash.HashPair(tmp1, tmp2)
+
+	// compute txhash
+	partialHash, err := tx.PartialHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(partialHash, partialHashTrue) {
+		t.Fatal("invalid txhash computation")
+	}
+
+	// repeat
+	partialHash2, err := tx.PartialHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(partialHash2, partialHashTrue) {
+		t.Fatal("invalid txhash computation 2")
+	}
+}
+
+func TestTxPartialHashBad0(t *testing.T) {
+	tx := &Tx{}
+	_, err := tx.PartialHash()
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxPartialHashBad1(t *testing.T) {
+	tx := &Tx{
+		Fee: uint256.Zero(),
+	}
+	_, err := tx.PartialHash()
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxComputePartialHashGood1(t *testing.T) {
+	ownerSigner := &crypto.Secp256k1Signer{}
+	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
+		t.Fatal(err)
+	}
+
+	// make txins
+	numConsumed := 5
+	consumedUTXOs := Vout{}
+	for i := 0; i < numConsumed; i++ {
+		consumedUTXOs = append(consumedUTXOs, makeVS(t, ownerSigner, 1+i))
+	}
+	err := consumedUTXOs.SetTxOutIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+	txInputs := []*TXIn{}
+	for i := 0; i < numConsumed; i++ {
+		txIn, err := consumedUTXOs[i].MakeTxIn()
+		if err != nil {
+			t.Fatal(err)
+		}
+		txInputs = append(txInputs, txIn)
+	}
+
+	// make utxos
+	generatedUTXOs := Vout{}
+	for i := 0; i < numConsumed; i++ {
+		generatedUTXOs = append(generatedUTXOs, makeVS(t, ownerSigner, 0))
+	}
+	err = generatedUTXOs.SetTxOutIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// make tx
+	vinPartial := uint32(3)
+	voutPartial := uint32(2)
+	vinPartialBytes := utils.MarshalUint32(vinPartial)
+	voutPartialBytes := utils.MarshalUint32(voutPartial)
+	data := []byte{}
+	data = append(data, vinPartialBytes...)
+	data = append(data, voutPartialBytes...)
+	tx := &Tx{
+		Type: 1,
+		Data: data,
+		Vin:  txInputs,
+		Vout: generatedUTXOs,
+		Fee:  uint256.Zero(),
+	}
+	err = tx.SetTxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < numConsumed; i++ {
+		err = consumedUTXOs[i].valueStore.Sign(tx.Vin[i], ownerSigner)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// compute correct txhash value
+	bytes0 := utils.MarshalUint32(0)
+	bytes1 := utils.MarshalUint32(1)
+	// type data
+	typeBytes := utils.MarshalUint32(tx.Type)
+	typeData := append(utils.CopySlice(bytes0), typeBytes...)
+	typeLeaf := txhash.LeafHash(typeData)
+	// data data
+	if len(tx.Data) != 8 {
+		t.Fatal("Should have len(tx.Data) == 8")
+	}
+	dataData := append(utils.CopySlice(bytes1), utils.CopySlice(tx.Data)...)
+	dataLeaf := txhash.LeafHash(dataData)
+
+	///// Partial
+	vinPartialHash, err := tx.computeVinHash(0, int(vinPartial))
+	if err != nil {
+		t.Fatal(err)
+	}
+	voutPartialHash, err := tx.computeVoutHash(0, int(voutPartial))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// finish computation
+	tmp1 := txhash.HashPair(typeLeaf, dataLeaf)
+	tmp2 := txhash.HashPair(vinPartialHash, voutPartialHash)
+	partialHashTrue := txhash.HashPair(tmp1, tmp2)
+
+	// compute txhash
+	partialHash, err := tx.computePartialHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(partialHash, partialHashTrue) {
+		t.Fatal("invalid txhash computation")
+	}
+}
+
+func TestTxComputePartialHashBad0(t *testing.T) {
+	tx := &Tx{}
+	_, err := tx.computePartialHash()
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxComputePartialHashBad1(t *testing.T) {
+	tx := &Tx{
+		Type: 1,
+	}
+	_, err := tx.computePartialHash()
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxComputePartialHashBad2(t *testing.T) {
+	tx := &Tx{
+		Type: 1,
+		Data: make([]byte, 8),
+	}
+	_, err := tx.computePartialHash()
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxComputePartialHashBad3(t *testing.T) {
+	ownerSigner := &crypto.Secp256k1Signer{}
+	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
+		t.Fatal(err)
+	}
+
+	// make txins
+	numConsumed := 5
+	consumedUTXOs := Vout{}
+	for i := 0; i < numConsumed; i++ {
+		consumedUTXOs = append(consumedUTXOs, makeVS(t, ownerSigner, 1+i))
+	}
+	err := consumedUTXOs.SetTxOutIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+	txInputs := []*TXIn{}
+	for i := 0; i < numConsumed; i++ {
+		txIn, err := consumedUTXOs[i].MakeTxIn()
+		if err != nil {
+			t.Fatal(err)
+		}
+		txInputs = append(txInputs, txIn)
+	}
+
+	// make utxos
+	generatedUTXOs := Vout{}
+	for i := 0; i < numConsumed; i++ {
+		generatedUTXOs = append(generatedUTXOs, makeVS(t, ownerSigner, 0))
+	}
+	err = generatedUTXOs.SetTxOutIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// make tx
+	vinPartial := uint32(6)
+	voutPartial := uint32(6)
+	vinPartialBytes := utils.MarshalUint32(vinPartial)
+	voutPartialBytes := utils.MarshalUint32(voutPartial)
+	data := []byte{}
+	data = append(data, vinPartialBytes...)
+	data = append(data, voutPartialBytes...)
+	tx := &Tx{
+		Type: 1,
+		Data: data,
+		Vin:  txInputs,
+		Vout: generatedUTXOs,
+		Fee:  uint256.Zero(),
+	}
+
+	_, err = tx.computePartialHash()
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxComputePartialHashBad4(t *testing.T) {
+	ownerSigner := &crypto.Secp256k1Signer{}
+	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
+		t.Fatal(err)
+	}
+
+	// make txins
+	numConsumed := 5
+	consumedUTXOs := Vout{}
+	for i := 0; i < numConsumed; i++ {
+		consumedUTXOs = append(consumedUTXOs, makeVS(t, ownerSigner, 1+i))
+	}
+	err := consumedUTXOs.SetTxOutIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+	txInputs := []*TXIn{}
+	for i := 0; i < numConsumed; i++ {
+		txIn, err := consumedUTXOs[i].MakeTxIn()
+		if err != nil {
+			t.Fatal(err)
+		}
+		txInputs = append(txInputs, txIn)
+	}
+
+	// make utxos
+	generatedUTXOs := Vout{}
+	for i := 0; i < numConsumed; i++ {
+		generatedUTXOs = append(generatedUTXOs, makeVS(t, ownerSigner, 0))
+	}
+	err = generatedUTXOs.SetTxOutIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// make tx
+	vinPartial := uint32(numConsumed)
+	voutPartial := uint32(6)
+	vinPartialBytes := utils.MarshalUint32(vinPartial)
+	voutPartialBytes := utils.MarshalUint32(voutPartial)
+	data := []byte{}
+	data = append(data, vinPartialBytes...)
+	data = append(data, voutPartialBytes...)
+	tx := &Tx{
+		Type: 1,
+		Data: data,
+		Vin:  txInputs,
+		Vout: generatedUTXOs,
+		Fee:  uint256.Zero(),
+	}
+
+	_, err = tx.computePartialHash()
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxComputeVinHashBad0(t *testing.T) {
+	tx := &Tx{}
+	start := 0
+	stop := 1
+	_, err := tx.computeVinHash(start, stop)
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxComputeVinHashBad1(t *testing.T) {
+	tx := &Tx{}
+	start := 1
+	stop := 0
+	_, err := tx.computeVinHash(start, stop)
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxComputeVinHashGood0(t *testing.T) {
+	tx := &Tx{}
+	start := 0
+	stop := 0
+	vinHash, err := tx.computeVinHash(start, stop)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bytes2 := utils.MarshalUint32(2)
+	vinHashTrue := txhash.LeafHash(bytes2)
+	if !bytes.Equal(vinHash, vinHashTrue) {
+		t.Fatal("invalid empty vinHash")
+	}
+}
+
+func TestTxComputeVinHashGood1(t *testing.T) {
+	ownerSigner := &crypto.Secp256k1Signer{}
+	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
+		t.Fatal(err)
+	}
+
+	// make txins
+	numConsumed := 5
+	consumedUTXOs := Vout{}
+	for i := 0; i < numConsumed; i++ {
+		consumedUTXOs = append(consumedUTXOs, makeVS(t, ownerSigner, 1+i))
+	}
+	err := consumedUTXOs.SetTxOutIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+	txInputs := []*TXIn{}
+	for i := 0; i < numConsumed; i++ {
+		txIn, err := consumedUTXOs[i].MakeTxIn()
+		if err != nil {
+			t.Fatal(err)
+		}
+		txInputs = append(txInputs, txIn)
+	}
+
+	// make tx
+	tx := &Tx{
+		Vin: txInputs,
+	}
+
+	// compute correct txhash value
+	bytes2 := utils.MarshalUint32(2)
+	// txin data
+	txinData := [][]byte{}
+	for i := 0; i < len(consumedUTXOs); i++ {
+		utxoID, err := tx.Vin[i].UTXOID()
+		if err != nil {
+			t.Fatal(err)
+		}
+		data := append(utils.CopySlice(bytes2), utxoID...)
+		txinData = append(txinData, data)
+	}
+	vinHashTrue := txhash.ComputeMerkleRoot(txinData)
+
+	// compute vinhash
+	vinHash, err := tx.computeVinHash(0, len(tx.Vin))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(vinHash, vinHashTrue) {
+		t.Fatal("invalid voutHash computation")
+	}
+}
+
+func TestTxComputeVoutHashBad0(t *testing.T) {
+	tx := &Tx{}
+	start := 0
+	stop := 1
+	_, err := tx.computeVoutHash(start, stop)
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxComputeVoutHashBad1(t *testing.T) {
+	tx := &Tx{}
+	start := 1
+	stop := 0
+	_, err := tx.computeVoutHash(start, stop)
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+}
+
+func TestTxComputeVoutHashGood0(t *testing.T) {
+	tx := &Tx{}
+	start := 0
+	stop := 0
+	voutHash, err := tx.computeVoutHash(start, stop)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bytes2 := utils.MarshalUint32(2)
+	voutHashTrue := txhash.LeafHash(bytes2)
+	if !bytes.Equal(voutHash, voutHashTrue) {
+		t.Fatal("invalid empty voutHash")
+	}
+}
+
+func TestTxComputeVoutHashGood1(t *testing.T) {
+	ownerSigner := &crypto.Secp256k1Signer{}
+	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
+		t.Fatal(err)
+	}
+
+	// make txins
+	numConsumed := 5
+	consumedUTXOs := Vout{}
+	for i := 0; i < numConsumed; i++ {
+		consumedUTXOs = append(consumedUTXOs, makeVS(t, ownerSigner, 1+i))
+	}
+	err := consumedUTXOs.SetTxOutIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+	txInputs := []*TXIn{}
+	for i := 0; i < numConsumed; i++ {
+		txIn, err := consumedUTXOs[i].MakeTxIn()
+		if err != nil {
+			t.Fatal(err)
+		}
+		txInputs = append(txInputs, txIn)
+	}
+
+	// make utxos
+	generatedUTXOs := Vout{}
+	for i := 0; i < numConsumed; i++ {
+		generatedUTXOs = append(generatedUTXOs, makeVS(t, ownerSigner, 0))
+	}
+	err = generatedUTXOs.SetTxOutIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// make tx
+	tx := &Tx{
+		Vin:  txInputs,
+		Vout: generatedUTXOs,
+		Fee:  uint256.Zero(),
+	}
+	err = tx.SetTxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < len(consumedUTXOs); i++ {
+		err = consumedUTXOs[i].valueStore.Sign(tx.Vin[i], ownerSigner)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// compute correct vouthash value
+	bytes2 := utils.MarshalUint32(2)
+	// utxo data
+	utxoData := [][]byte{}
+	for i := 0; i < len(generatedUTXOs); i++ {
+		prehash, err := tx.Vout[i].PreHash()
+		if err != nil {
+			t.Fatal(err)
+		}
+		utxoID := MakeUTXOID(prehash, uint32(i))
+		data := append(utils.CopySlice(bytes2), utxoID...)
+		utxoData = append(utxoData, data)
+	}
+	voutHashTrue := txhash.ComputeMerkleRoot(utxoData)
+
+	// compute vouthash
+	voutHash, err := tx.computeVoutHash(0, len(tx.Vout))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(voutHash, voutHashTrue) {
+		t.Fatal("invalid voutHash computation")
 	}
 }
 

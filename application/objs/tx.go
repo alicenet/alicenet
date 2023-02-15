@@ -361,7 +361,6 @@ func (b *Tx) computeTxHash() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-
 		// UTXO processing
 		voutHash, err := b.computeVoutHash(0, len(b.Vout))
 		if err != nil {
@@ -371,6 +370,62 @@ func (b *Tx) computeTxHash() ([]byte, error) {
 		// Finish processing
 		tmp2 := txhash.HashPair(vinHash, voutHash)
 		root := txhash.HashPair(tmp1, tmp2)
+		return root, nil
+	} else if b.Type == 1 {
+		if len(b.Data) != 8 {
+			return nil, errorz.ErrInvalid{}.New("tx.computeTxHash: Type 1; invalid data")
+		}
+		if len(b.Vin) == 0 {
+			return nil, errorz.ErrInvalid{}.New("tx.computeTxHash: Type 1; invalid Vin")
+		}
+		if len(b.Vout) == 0 {
+			return nil, errorz.ErrInvalid{}.New("tx.computeTxHash: Type 1; invalid Vout")
+		}
+		vinPartialLen, err := utils.UnmarshalUint32(b.Data[0:4])
+		if err != nil {
+			return nil, err
+		}
+		if int(vinPartialLen) == 0 {
+			return nil, errorz.ErrInvalid{}.New("tx.computeTxHash: Type 1; require vinPartialLen > 0")
+		}
+		voutPartialLen, err := utils.UnmarshalUint32(b.Data[4:8])
+		if err != nil {
+			return nil, err
+		}
+		if len(b.Vin) < int(vinPartialLen) {
+			return nil, errorz.ErrInvalid{}.New("tx.computeTxHash: Type 1; invalid Vin length")
+		}
+		if len(b.Vout) < int(voutPartialLen) {
+			return nil, errorz.ErrInvalid{}.New("tx.computeTxHash: Type 1; invalid Vout length")
+		}
+
+		// TxIn processing; Partial
+		vinPartialHash, err := b.computeVinHash(0, int(vinPartialLen))
+		if err != nil {
+			return nil, err
+		}
+		// UTXO processing; Partial
+		voutPartialHash, err := b.computeVoutHash(0, int(voutPartialLen))
+		if err != nil {
+			return nil, err
+		}
+
+		// TxIn processing; Complete
+		vinCompleteHash, err := b.computeVinHash(int(vinPartialLen), len(b.Vin))
+		if err != nil {
+			return nil, err
+		}
+		// UTXO processing; Complete
+		voutCompleteHash, err := b.computeVoutHash(int(voutPartialLen), len(b.Vin))
+		if err != nil {
+			return nil, err
+		}
+
+		// Finish processing
+		tmp2 := txhash.HashPair(vinPartialHash, voutPartialHash)
+		tmp3 := txhash.HashPair(vinCompleteHash, voutCompleteHash)
+		tmp4 := txhash.HashPair(tmp2, tmp3)
+		root := txhash.HashPair(tmp1, tmp4)
 		return root, nil
 	} else {
 		return nil, errorz.ErrInvalid{}.New("tx.computeTxHash: invalid type")
@@ -406,7 +461,6 @@ func (b *Tx) PartialHash() ([]byte, error) {
 func (b *Tx) computePartialHash() ([]byte, error) {
 	bytes0 := utils.MarshalUint32(uint32(0))
 	bytes1 := utils.MarshalUint32(uint32(1))
-	//bytes2 := utils.MarshalUint32(uint32(2))
 
 	// Type processing
 	typeBytes := utils.MarshalUint32(b.Type)
@@ -469,7 +523,7 @@ func (b *Tx) computePartialHash() ([]byte, error) {
 }
 
 func (b *Tx) computeVinHash(start, stop int) ([]byte, error) {
-	if len(b.Vin) < int(stop) {
+	if len(b.Vin) < stop {
 		return nil, errorz.ErrInvalid{}.New("tx.computeVinHash: invalid Vin length")
 	}
 	if start > stop {
@@ -499,7 +553,7 @@ func (b *Tx) computeVinHash(start, stop int) ([]byte, error) {
 }
 
 func (b *Tx) computeVoutHash(start, stop int) ([]byte, error) {
-	if len(b.Vout) < int(stop) {
+	if len(b.Vout) < stop {
 		return nil, errorz.ErrInvalid{}.New("tx.computeVoutHash: invalid Vout length")
 	}
 	if start > stop {
