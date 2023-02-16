@@ -33,6 +33,7 @@ import (
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/localrpc"
 	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/metrics"
 	"github.com/alicenet/alicenet/peering"
 	"github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/status"
@@ -40,6 +41,7 @@ import (
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -105,6 +107,7 @@ func initEthereumConnection(
 func initPeerManager(
 	consGossipHandlers *gossip.Handlers,
 	consReqHandler *request.Handler,
+	metricRegistry prometheus.Registerer,
 ) *peering.PeerManager {
 	p2pDispatch := proto.NewP2PDispatch()
 
@@ -117,7 +120,9 @@ func initPeerManager(
 		config.Configuration.Transport.FirewallHost,
 		config.Configuration.Transport.P2PListeningAddress,
 		config.Configuration.Transport.PrivateKey,
-		config.Configuration.Transport.UPnP)
+		config.Configuration.Transport.UPnP,
+		metricRegistry,
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -209,7 +214,8 @@ func validatorNode(cmd *cobra.Command, args []string) {
 
 	newMajorIsGreater, _, _, localVersion, err := aUtils.CompareCanonicalVersion(latestVersion)
 	if err != nil {
-		panic(err)
+		//panic(err)
+		logger.Infof("running in development mode")
 	}
 
 	logger.Infof(
@@ -296,7 +302,10 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	// stdout logger
 	statusLogger := &status.Logger{}
 
-	peerManager := initPeerManager(consGossipHandlers, consReqHandler)
+	// shared prometheus metric registry
+	metricRegistry := prometheus.NewRegistry()
+
+	peerManager := initPeerManager(consGossipHandlers, consReqHandler, metricRegistry)
 
 	consDB.Init(rawConsensusDb)
 
@@ -409,6 +418,9 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	localStateHandler.Init(consDB, app, consGossipHandlers, publicKey, consSync.Safe, storage)
 	statusLogger.Init(consLSEngine, peerManager, consAdminHandlers, mon)
 
+	// metrics server serves the prometheus server runtime
+	metricsServer := metrics.NewServer(config.Configuration.Metrics.Port, metricRegistry)
+
 	//////////////////////////////////////////////////////////////////////////////
 	//LAUNCH ALL SERVICE GOROUTINES///////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////
@@ -442,6 +454,9 @@ func validatorNode(cmd *cobra.Command, args []string) {
 
 	go consGossipHandlers.Start()
 	defer consGossipHandlers.Close()
+
+	go metricsServer.Start()
+	defer metricsServer.Stop(context.TODO())
 
 	//////////////////////////////////////////////////////////////////////////////
 	//SETUP SHUTDOWN MONITORING///////////////////////////////////////////////////

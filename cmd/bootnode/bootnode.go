@@ -27,7 +27,7 @@ var Command = cobra.Command{
 	Long:  "Boot nodes do nothing put seed the peer table",
 	Run:   bootNode}
 
-// extractPort from passed address
+// extractPort from passed add1ress
 func extractPort(addr string) (uint32, error) {
 	_, portStr, err := net.SplitHostPort(addr)
 	if err != nil {

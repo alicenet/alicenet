@@ -3,10 +3,9 @@ package initialization
 import (
 	"fmt"
 	"os"
+	"path"
 
 	"github.com/alicenet/alicenet/cmd/ethkey"
-
-	"path"
 
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/logging"
@@ -216,6 +215,9 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 		},
 		Validator: config.ValidatorConfig{
 			SymmetricKey: validatorSymmetricKey,
+		},
+		Metrics: config.MetricsConfig{
+			Port: 9090,
 		},
 	}
 

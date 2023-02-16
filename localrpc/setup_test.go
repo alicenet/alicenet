@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v2"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/viper"
 
 	"github.com/alicenet/alicenet/application"
@@ -456,7 +457,9 @@ func initPeerManager(consGossipHandlers *gossip.Handlers, consReqHandler *reques
 		config.Configuration.Transport.FirewallHost,
 		config.Configuration.Transport.P2PListeningAddress,
 		config.Configuration.Transport.PrivateKey,
-		config.Configuration.Transport.UPnP)
+		config.Configuration.Transport.UPnP,
+		prometheus.NewRegistry(),
+	)
 	if err != nil {
 		panic(err)
 	}
