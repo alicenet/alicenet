@@ -281,13 +281,34 @@ func (b *Tx) ValidateTxHash() error {
 	if err != nil {
 		return err
 	}
-	for _, txIn := range b.Vin {
+	var tmpHash []byte
+	var tmpUint32 uint32
+	if b.Type == 1 {
+		tmpHash, err = b.PartialHash()
+		if err != nil {
+			return err
+		}
+		tmpUint32, err = utils.UnmarshalUint32(b.Data[0:4])
+		if err != nil {
+			return err
+		}
+	}
+	partialHash := tmpHash
+	vinPartialLen := tmpUint32
+
+	for idx, txIn := range b.Vin {
 		txInTxHash, err := txIn.TxHash()
 		if err != nil {
 			return err
 		}
-		if !bytes.Equal(txInTxHash, txHash) {
-			return errorz.ErrInvalid{}.New("validateTxHash: wrong txHash (vin)")
+		if (b.Type == 1) && (idx < int(vinPartialLen)) {
+			if !bytes.Equal(txInTxHash, partialHash) {
+				return errorz.ErrInvalid{}.New("validateTxHash: wrong txHash (vin)")
+			}
+		} else {
+			if !bytes.Equal(txInTxHash, txHash) {
+				return errorz.ErrInvalid{}.New("validateTxHash: wrong txHash (vin)")
+			}
 		}
 	}
 	for _, txOut := range b.Vout {
@@ -506,7 +527,6 @@ func (b *Tx) computePartialHash() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-
 		// UTXO processing
 		voutPartialHash, err := b.computeVoutHash(0, int(voutPartialLen))
 		if err != nil {
@@ -595,9 +615,29 @@ func (b *Tx) SetTxHash() error {
 	if err != nil {
 		return err
 	}
-	for _, txIn := range b.Vin {
-		if err := txIn.SetTxHash(txHash); err != nil {
+	var tmpHash []byte
+	var tmpUint32 uint32
+	if b.Type == 1 {
+		tmpHash, err = b.PartialHash()
+		if err != nil {
 			return err
+		}
+		tmpUint32, err = utils.UnmarshalUint32(b.Data[0:4])
+		if err != nil {
+			return err
+		}
+	}
+	partialHash := tmpHash
+	vinPartialLen := tmpUint32
+	for idx, txIn := range b.Vin {
+		if (b.Type == 1) && (idx < int(vinPartialLen)) {
+			if err := txIn.SetTxHash(partialHash); err != nil {
+				return err
+			}
+		} else {
+			if err := txIn.SetTxHash(txHash); err != nil {
+				return err
+			}
 		}
 	}
 	for _, txOut := range b.Vout {
