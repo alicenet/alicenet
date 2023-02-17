@@ -187,7 +187,7 @@ func makeDSWithValueFee(t *testing.T, ownerSigner Signer, i int, rawData, index 
 	return utxInputs
 }
 
-func TestTx(t *testing.T) {
+func TestTxType0(t *testing.T) {
 	storage := MakeWrapperStorageMock()
 
 	ownerSigner := &crypto.Secp256k1Signer{}
@@ -458,6 +458,176 @@ func TestTx(t *testing.T) {
 	t.Logf("ChainID: %x", tx.Vin[0].TXInLinker.TXInPreImage.ChainID)
 	t.Logf("TxHash: %x", tx.Vin[0].TXInLinker.TxHash)
 	t.Logf("Sig: %x", tx.Vin[0].Signature)
+}
+
+func TestTxType1(t *testing.T) {
+	storage := MakeWrapperStorageMock()
+
+	ownerSigner := &crypto.Secp256k1Signer{}
+	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
+		t.Fatal(err)
+	}
+
+	numConsumed := 5
+	numGenerated := 5
+
+	consumedUTXOs := Vout{}
+	for i := 0; i < numConsumed; i++ {
+		consumedUTXOs = append(consumedUTXOs, makeVS(t, ownerSigner, i))
+	}
+	err := consumedUTXOs.SetTxOutIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	txInputs := []*TXIn{}
+	for i := 0; i < numConsumed; i++ {
+		txIn, err := consumedUTXOs[i].MakeTxIn()
+		if err != nil {
+			t.Fatal(err)
+		}
+		txInputs = append(txInputs, txIn)
+	}
+	generatedUTXOs := Vout{}
+	for i := 0; i < numGenerated; i++ {
+		generatedUTXOs = append(generatedUTXOs, makeVS(t, ownerSigner, 0))
+	}
+	err = generatedUTXOs.SetTxOutIdx()
+	if err != nil {
+		t.Fatal(err)
+	}
+	vinPartial := uint32(3)
+	voutPartial := uint32(2)
+	data := append(utils.MarshalUint32(vinPartial), utils.MarshalUint32(voutPartial)...)
+	tx := &Tx{
+		Type: 1,
+		Data: data,
+		Vin:  txInputs,
+		Vout: generatedUTXOs,
+		Fee:  uint256.Zero(),
+	}
+	err = tx.SetTxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < numConsumed; i++ {
+		err = consumedUTXOs[i].valueStore.Sign(tx.Vin[i], ownerSigner)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// validate the returned object
+	_, err = tx.ValidateUnique(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = tx.ValidateEqualVinVout(1, consumedUTXOs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = tx.ValidateTxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = tx.ValidatePreSignature()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = tx.ValidateSignature(1, consumedUTXOs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tx.Validate(nil, 1, consumedUTXOs, storage)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	txVec := TxVec([]*Tx{tx})
+	err = txVec.Validate(1, consumedUTXOs, storage)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = txVec.ConsumedUTXOID()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = txVec.GeneratedUTXOID()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = txVec.GeneratedPreHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	isDep := txVec.ConsumedIsDeposit()
+	for _, i := range isDep {
+		if i {
+			t.Fatalf("%v", i)
+		}
+	}
+
+	// check indexing
+	txVec = append(txVec, []*Tx{tx}...)
+	_, err = txVec.ConsumedUTXOID()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = txVec.GeneratedUTXOID()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = txVec.GeneratedPreHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	isDep = txVec.ConsumedIsDeposit()
+	for _, i := range isDep {
+		if i {
+			t.Fatalf("%v", i)
+		}
+	}
+
+	txhash, err := tx.TxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	partialHash, err := tx.PartialHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// check txhash
+	for k := 0; k < numConsumed; k++ {
+		retTxHash, err := tx.Vin[k].TxHash()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if k < int(vinPartial) {
+			if !bytes.Equal(retTxHash, partialHash) {
+				t.Fatal("invalid txhash")
+			}
+		} else {
+			if !bytes.Equal(retTxHash, txhash) {
+				t.Fatal("invalid txhash")
+			}
+		}
+	}
+	for k := 0; k < numGenerated; k++ {
+		retTxHash, err := tx.Vout[k].TxHash()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(retTxHash, txhash) {
+			t.Fatal("invalid txhash")
+		}
+	}
 }
 
 func TestTxMarshalGood1(t *testing.T) {
