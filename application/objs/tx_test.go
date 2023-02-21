@@ -290,7 +290,12 @@ func TestTxType0(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	tx.txHash = nil
 	err = tx.ValidateTxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tx.TxHash()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -526,7 +531,12 @@ func TestTxType1(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	tx.txHash = nil
 	err = tx.ValidateTxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = tx.TxHash()
 	if err != nil {
 		t.Fatal(err)
 	}
