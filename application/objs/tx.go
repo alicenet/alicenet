@@ -119,6 +119,8 @@ func (b *Tx) UnmarshalCapn(bc mdefs.Tx) error {
 		return err
 	}
 	b.Fee = fObj
+	b.Type = bc.Type()
+	b.Data = utils.CopySlice(bc.Data())
 	return nil
 }
 
@@ -192,6 +194,10 @@ func (b *Tx) MarshalCapn(seg *capnp.Segment) (mdefs.Tx, error) {
 	bc.SetFee5(u32array[5])
 	bc.SetFee6(u32array[6])
 	bc.SetFee7(u32array[7])
+	bc.SetType(b.Type)
+	if err := bc.SetData(utils.CopySlice(b.Data)); err != nil {
+		return bc, err
+	}
 	return bc, nil
 }
 

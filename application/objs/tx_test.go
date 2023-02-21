@@ -628,6 +628,53 @@ func TestTxType1(t *testing.T) {
 			t.Fatal("invalid txhash")
 		}
 	}
+
+	tx2 := &Tx{}
+	txBytes, err := tx.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = tx2.UnmarshalBinary(txBytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	txhash2, err := tx2.TxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(txhash2, txhash) {
+		t.Fatal("invalid txhash")
+	}
+
+	partialHash2, err := tx2.PartialHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// check txhash
+	for k := 0; k < numConsumed; k++ {
+		retTxHash, err := tx2.Vin[k].TxHash()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if k < int(vinPartial) {
+			if !bytes.Equal(retTxHash, partialHash2) {
+				t.Fatal("invalid txhash")
+			}
+		} else {
+			if !bytes.Equal(retTxHash, txhash2) {
+				t.Fatal("invalid txhash")
+			}
+		}
+	}
+	for k := 0; k < numGenerated; k++ {
+		retTxHash, err := tx2.Vout[k].TxHash()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(retTxHash, txhash2) {
+			t.Fatal("invalid txhash")
+		}
+	}
 }
 
 func TestTxMarshalGood1(t *testing.T) {
