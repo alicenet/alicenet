@@ -94,17 +94,20 @@ func makeVSTXIn(t *testing.T, ownerSigner objs.Signer, txHash []byte) (*objs.TXO
 	return vs, txIn
 }
 
-func makeTxInitial(t *testing.T, ownerSigner objs.Signer) (objs.Vout, *objs.Tx) {
+func makeTxInitial(t *testing.T, ownerSigner objs.Signer, numTxIns uint32) (objs.Vout, *objs.Tx) {
 	t.Helper()
+	if numTxIns == 0 {
+		t.Fatal("invalid numTxIns")
+	}
 	consumedUTXOs := objs.Vout{}
 	txInputs := []*objs.TXIn{}
-	for i := 0; i < 2; i++ {
+	for i := 0; i < int(numTxIns); i++ {
 		utxo, txin := makeVSTXIn(t, ownerSigner, nil)
 		consumedUTXOs = append(consumedUTXOs, utxo)
 		txInputs = append(txInputs, txin)
 	}
 	generatedUTXOs := objs.Vout{}
-	for i := 0; i < 2; i++ {
+	for i := 0; i < int(numTxIns); i++ {
 		generatedUTXOs = append(generatedUTXOs, makeVS(t, ownerSigner))
 	}
 	err := generatedUTXOs.SetTxOutIdx()
@@ -121,7 +124,7 @@ func makeTxInitial(t *testing.T, ownerSigner objs.Signer) (objs.Vout, *objs.Tx) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	for i := 0; i < 2; i++ {
+	for i := 0; i < int(numTxIns); i++ {
 		vs, err := consumedUTXOs[i].ValueStore()
 		if err != nil {
 			t.Fatal(err)
@@ -132,47 +135,6 @@ func makeTxInitial(t *testing.T, ownerSigner objs.Signer) (objs.Vout, *objs.Tx) 
 		}
 	}
 	return consumedUTXOs, tx
-}
-
-func makeTxConsuming(t *testing.T, ownerSigner objs.Signer, consumedUTXOs objs.Vout) *objs.Tx {
-	t.Helper()
-	txInputs := []*objs.TXIn{}
-	for i := 0; i < 2; i++ {
-		txin, err := consumedUTXOs[i].MakeTxIn()
-		if err != nil {
-			t.Fatal(err)
-		}
-		txInputs = append(txInputs, txin)
-	}
-	generatedUTXOs := objs.Vout{}
-	for i := 0; i < 2; i++ {
-		generatedUTXOs = append(generatedUTXOs, makeVS(t, ownerSigner))
-	}
-	err := generatedUTXOs.SetTxOutIdx()
-	if err != nil {
-		t.Fatal(err)
-	}
-	txfee := uint256.Zero()
-	tx := &objs.Tx{
-		Vin:  txInputs,
-		Vout: generatedUTXOs,
-		Fee:  txfee,
-	}
-	err = tx.SetTxHash()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for i := 0; i < 2; i++ {
-		vs, err := consumedUTXOs[i].ValueStore()
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = vs.Sign(tx.Vin[i], ownerSigner)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-	return tx
 }
 
 func TestMined(t *testing.T) {
@@ -189,15 +151,14 @@ func TestMined(t *testing.T) {
 	storage := makeWrapperStorageMock()
 
 	ownerSigner := testingOwner(t)
-	consumedUTXOs, tx := makeTxInitial(t, ownerSigner)
-
-	tx2 := makeTxConsuming(t, ownerSigner, consumedUTXOs)
+	consumedUTXOs, tx := makeTxInitial(t, ownerSigner, 2)
+	consumedUTXOs2, tx2 := makeTxInitial(t, ownerSigner, 3)
 
 	_, err = tx.Validate(nil, 1, consumedUTXOs, storage)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = tx2.Validate(nil, 1, tx.Vout, storage)
+	_, err = tx2.Validate(nil, 1, consumedUTXOs2, storage)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,13 +167,23 @@ func TestMined(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = hndlr.Add(txn, 1, []*objs.Tx{tx})
+		tx2Hash, err := tx2.TxHash()
 		if err != nil {
 			t.Fatal(err)
 		}
-		getTx1, _, err := hndlr.Get(txn, [][]byte{txHash})
+		if bytes.Equal(txHash, tx2Hash) {
+			t.Fatal("tx and tx2 have the same txhash")
+		}
+		err = hndlr.Add(txn, 1, []*objs.Tx{tx, tx2})
 		if err != nil {
 			t.Fatal(err)
+		}
+		getTx1, missing, err := hndlr.Get(txn, [][]byte{txHash})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(missing) > 0 {
+			t.Fatal("should not be missing")
 		}
 		getTxHash1, err := getTx1[0].TxHash()
 		if err != nil {
@@ -221,37 +192,19 @@ func TestMined(t *testing.T) {
 		if !bytes.Equal(getTxHash1, txHash) {
 			t.Fatalf("txHash mismatch:\noriginalHash:%x\nreturnedHash:%x\n", txHash, getTxHash1)
 		}
-		err = hndlr.Delete(txn, [][]byte{txHash})
+		atHeight, err := hndlr.GetHeightForTx(txn, getTxHash1)
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, missing, err := hndlr.Get(txn, [][]byte{txHash})
-		if len(missing) != 1 {
-			t.Error(err)
-			t.Fatal("delete failure")
+		if atHeight != 1 {
+			t.Fatalf("not at height 1: %v", atHeight)
 		}
-		tx2Hash, err := tx2.TxHash()
+		getTx2, missing, err := hndlr.Get(txn, [][]byte{tx2Hash})
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = hndlr.Add(txn, 1, []*objs.Tx{tx, tx2})
-		if err != nil {
-			t.Fatal(err)
-		}
-		getTx1, _, err = hndlr.Get(txn, [][]byte{txHash})
-		if err != nil {
-			t.Fatal(err)
-		}
-		getTxHash1, err = getTx1[0].TxHash()
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !bytes.Equal(getTxHash1, txHash) {
-			t.Fatalf("txHash mismatch:\noriginalHash:%x\nreturnedHash:%x\n", txHash, getTxHash1)
-		}
-		getTx2, _, err := hndlr.Get(txn, [][]byte{tx2Hash})
-		if err != nil {
-			t.Fatal(err)
+		if len(missing) > 0 {
+			t.Fatal("should not be missing")
 		}
 		getTxHash2, err := getTx2[0].TxHash()
 		if err != nil {
@@ -260,12 +213,51 @@ func TestMined(t *testing.T) {
 		if !bytes.Equal(getTxHash2, tx2Hash) {
 			t.Fatalf("txHash mismatch:\noriginalHash:%x\nreturnedHash:%x\n", tx2Hash, getTxHash2)
 		}
-		atHeight, err := hndlr.GetHeightForTx(txn, getTxHash2)
+		atHeight, err = hndlr.GetHeightForTx(txn, getTxHash2)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if atHeight != 1 {
 			t.Fatalf("not at height 1: %v", atHeight)
+		}
+		err = hndlr.Delete(txn, [][]byte{tx2Hash})
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, missing, err = hndlr.Get(txn, [][]byte{tx2Hash})
+		if err != nil {
+			t.Error(err)
+		}
+		if len(missing) != 1 {
+			t.Fatal("delete failure")
+		}
+		_, missing, err = hndlr.Get(txn, [][]byte{txHash})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(missing) > 0 {
+			t.Fatal("Should not be missing because tx was not deleted")
+		}
+		atHeight, err = hndlr.GetHeightForTx(txn, getTxHash1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if atHeight != 1 {
+			t.Fatalf("not at height 1: %v", atHeight)
+		}
+		height := uint32(1)
+		idx := uint32(0)
+		retTxhash, err := hndlr.heightIdxIndex.GetTxHashFromHeightIdx(txn, height, idx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(retTxhash, txHash) {
+			t.Fatal("incorrect hash returned")
+		}
+		idx = uint32(1)
+		_, err = hndlr.heightIdxIndex.GetTxHashFromHeightIdx(txn, height, idx)
+		if err == nil {
+			t.Fatal("Should have raised error")
 		}
 		return nil
 	})
@@ -280,7 +272,8 @@ func TestMinedDelete(t *testing.T) {
 	hndlr := NewMinedTxHandler()
 
 	ownerSigner := testingOwner(t)
-	consumedUTXOs, tx := makeTxInitial(t, ownerSigner)
+	numTxIns := uint32(3)
+	consumedUTXOs, tx := makeTxInitial(t, ownerSigner, numTxIns)
 
 	storage := makeWrapperStorageMock()
 
@@ -328,7 +321,8 @@ func TestMinedGet(t *testing.T) {
 	hndlr := NewMinedTxHandler()
 
 	ownerSigner := testingOwner(t)
-	consumedUTXOs, tx := makeTxInitial(t, ownerSigner)
+	numTxIns := uint32(4)
+	consumedUTXOs, tx := makeTxInitial(t, ownerSigner, numTxIns)
 
 	storage := makeWrapperStorageMock()
 
@@ -396,7 +390,8 @@ func TestMinedGetHeightForTx(t *testing.T) {
 	hndlr := NewMinedTxHandler()
 
 	ownerSigner := testingOwner(t)
-	consumedUTXOs, tx := makeTxInitial(t, ownerSigner)
+	numTxIns := uint32(3)
+	consumedUTXOs, tx := makeTxInitial(t, ownerSigner, numTxIns)
 
 	storage := makeWrapperStorageMock()
 
@@ -448,7 +443,8 @@ func TestMinedGetOneInternal(t *testing.T) {
 	hndlr := NewMinedTxHandler()
 
 	ownerSigner := testingOwner(t)
-	consumedUTXOs, tx := makeTxInitial(t, ownerSigner)
+	numTxIns := uint32(3)
+	consumedUTXOs, tx := makeTxInitial(t, ownerSigner, numTxIns)
 
 	storage := makeWrapperStorageMock()
 
@@ -472,11 +468,12 @@ func TestMinedGetOneInternal(t *testing.T) {
 	}
 
 	err = db.Update(func(txn *badger.Txn) error {
+		idx := uint32(0)
 		txHash, err := tx.TxHash()
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = hndlr.addOneInternal(txn, tx, txHash, height)
+		err = hndlr.addOneInternal(txn, tx, txHash, height, idx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -508,7 +505,8 @@ func TestMinedAddOneInternal(t *testing.T) {
 	hndlr := NewMinedTxHandler()
 
 	ownerSigner := testingOwner(t)
-	consumedUTXOs, tx := makeTxInitial(t, ownerSigner)
+	numTxIns := uint32(2)
+	consumedUTXOs, tx := makeTxInitial(t, ownerSigner, numTxIns)
 
 	storage := makeWrapperStorageMock()
 
@@ -522,7 +520,8 @@ func TestMinedAddOneInternal(t *testing.T) {
 	height := uint32(1)
 
 	err = db.Update(func(txn *badger.Txn) error {
-		err := hndlr.addOneInternal(txn, txBad, txHashBad, height)
+		idx := uint32(0)
+		err := hndlr.addOneInternal(txn, txBad, txHashBad, height, idx)
 		if err == nil {
 			t.Fatal("Should have raised error")
 		}
@@ -533,11 +532,12 @@ func TestMinedAddOneInternal(t *testing.T) {
 	}
 
 	err = db.Update(func(txn *badger.Txn) error {
+		idx := uint32(0)
 		txHash, err := tx.TxHash()
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = hndlr.addOneInternal(txn, tx, txHash, height)
+		err = hndlr.addOneInternal(txn, tx, txHash, height, idx)
 		if err != nil {
 			t.Fatal(err)
 		}

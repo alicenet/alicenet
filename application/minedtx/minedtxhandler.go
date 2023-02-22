@@ -32,7 +32,7 @@ func (mt *MinedTxHandler) Add(txn *badger.Txn, height uint32, txs []*objs.Tx) er
 		if err != nil {
 			return err
 		}
-		err = mt.addOneInternal(txn, tx, txHash, height)
+		err = mt.addOneInternal(txn, tx, txHash, height, uint32(j))
 		if err != nil {
 			return err
 		}
@@ -95,13 +95,12 @@ func (mt *MinedTxHandler) getOneInternal(txn *badger.Txn, txHash []byte) (*objs.
 	return db.GetTx(txn, key)
 }
 
-// addOneInternal adds a tx to the mined tx handler
-func (mt *MinedTxHandler) addOneInternal(txn *badger.Txn, tx *objs.Tx, txHash []byte, height uint32) error {
+func (mt *MinedTxHandler) addOneInternal(txn *badger.Txn, tx *objs.Tx, txHash []byte, height, idx uint32) error {
 	if err := tx.ValidateIssuedAtForMining(height); err != nil {
 		return err
 	}
 	key := mt.makeMinedTxKey(txHash)
-	err := mt.heightIdxIndex.Add(txn, txHash, height, 0)
+	err := mt.heightIdxIndex.Add(txn, txHash, height, idx)
 	if err != nil {
 		return err
 	}
