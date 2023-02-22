@@ -121,7 +121,7 @@ func (tm *TaskManager) close() {
 
 // triggered when onError occurs during the execution.
 func (tm *TaskManager) onError(err error) error {
-	tm.logger.WithError(err).Errorf("An unercoverable error occured %v", err)
+	tm.logger.WithError(err).Errorf("An unercoverable error occurred %v", err)
 	tm.close()
 
 	return err
@@ -181,7 +181,7 @@ func (tm *TaskManager) eventLoop() {
 			taskRequest.response.sendResponse(response)
 			err := tm.persistState()
 			if err != nil {
-				tm.logger.WithError(err).Logger.Warn("presist state failed")
+				tm.logger.WithError(err).Logger.Warn("persist state failed")
 			}
 		case taskResponse, ok := <-tm.responseChan.erChan:
 			if !ok {

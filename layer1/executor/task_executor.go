@@ -83,7 +83,7 @@ func (te *TaskExecutor) onError(err error) error {
 	te.Lock()
 	defer te.close()
 	defer te.Unlock()
-	te.logger.WithError(err).Errorf("An unercoverable error occured %v", err)
+	te.logger.WithError(err).Errorf("An unercoverable error occurred %v", err)
 	return err
 }
 

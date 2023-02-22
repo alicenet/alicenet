@@ -3,15 +3,16 @@ package utxotrie
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"testing"
+
 	"github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io/ioutil"
-	"os"
-	"testing"
 )
 
 /*
@@ -221,7 +222,7 @@ func TestCorruptedSparseMerkleTrie(t *testing.T) {
 			require.Nil(t, err)
 			defer goldenFile.Close()
 
-			byteGoldenFile, err := ioutil.ReadAll(goldenFile)
+			byteGoldenFile, err := io.ReadAll(goldenFile)
 			require.Nil(t, err)
 
 			testData := &TestDataUpdates{}

@@ -35,8 +35,8 @@ var ErrNoConn = fmt.Errorf("no conn")
 
 var Command = cobra.Command{
 	Use:   "firewalld",
-	Short: "Continously updates a given firewall in the background",
-	Long:  "Continously updates a given firewall using values received over IPC from main AliceNet process",
+	Short: "Continuously updates a given firewall in the background",
+	Long:  "Continuously updates a given firewall using values received over IPC from main AliceNet process",
 	Run:   FirewallDaemon,
 }
 
