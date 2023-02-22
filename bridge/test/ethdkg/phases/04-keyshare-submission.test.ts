@@ -18,7 +18,7 @@ describe("ETHDKG: Submit Key share", () => {
     return startAtSubmitKeyShares(validators4);
   }
 
-  it("should not allow submission of key shares when not in KeyShareSubmission phase", async () => {
+  it("should not allow submission of key shares when not in KeyShareSubmission phase [ @skip-on-coverage ]", async () => {
     const [ethdkg, validatorPool, expectedNonce] =
       await startAtDistributeShares(validators4);
     // distribute shares for all validators
@@ -59,7 +59,7 @@ describe("ETHDKG: Submit Key share", () => {
       ]);
   });
 
-  it("should allow submission of key shares", async function () {
+  it("should allow submission of key shares [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
       deployFixture
     );
@@ -73,7 +73,7 @@ describe("ETHDKG: Submit Key share", () => {
     await waitNextPhaseStartDelay(ethdkg);
   });
 
-  it("should not allow non-validator to submit key shares", async function () {
+  it("should not allow non-validator to submit key shares [ @skip-on-coverage ]", async function () {
     const [ethdkg, ,] = await loadFixture(deployFixture);
 
     // a non-validator tries to submit the Key shares
@@ -112,7 +112,7 @@ describe("ETHDKG: Submit Key share", () => {
       .withArgs(validator11);
   });
 
-  it("should not allow multiple submission of key shares by the same validator", async function () {
+  it("should not allow multiple submission of key shares by the same validator [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
       deployFixture
     );
@@ -144,7 +144,7 @@ describe("ETHDKG: Submit Key share", () => {
       .withArgs(ethers.utils.getAddress(validators4[0].address));
   });
 
-  it("should not allow submission of key shares with empty input state", async function () {
+  it("should not allow submission of key shares with empty input state [ @skip-on-coverage ]", async function () {
     const [ethdkg, ,] = await loadFixture(deployFixture);
 
     const ethDKGPhases = await ethers.getContractAt(

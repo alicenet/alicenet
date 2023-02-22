@@ -7,6 +7,7 @@ linters:
   enable:
     - asciicheck 
     - bidichk 
+    - bodyclose 
     - decorder 
     - errcheck
     - errchkjson 
@@ -17,15 +18,15 @@ linters:
     - gosimple
     - govet
     - grouper 
+    - misspell 
     - ineffassign
+    - staticcheck
     - tenv 
     - thelper 
     - tparallel 
     - unused 
-    - bodyclose 
   # Disabling linters until we get them fixed up.
   disable:
-    - staticcheck
     - containedctx # 4 issues
     - contextcheck # 2 issues
     - cyclop # 25+ issues
@@ -53,7 +54,6 @@ linters:
     - importas # 50 issues
     - maintidx # 18 issues
     - makezero # 4 issues
-    - misspell # 6 issues
     - nakedret # 2 issues
     - nestif # 50 issues
     - nilerr # 8 issues
@@ -68,7 +68,6 @@ linters:
     - prealloc # 12 issues
     - predeclared # 4 issues
     - revive
-    - staticcheck
     - stylecheck # 50 issues
     - tagliatelle # 7 issues
     - unconvert # 3 issues

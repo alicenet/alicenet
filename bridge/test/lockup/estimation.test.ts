@@ -29,7 +29,7 @@ describe("estimateFinalBonusWithProfits", async () => {
       ));
     });
 
-    it("returns expected amounts with 1 staker", async () => {
+    it("returns expected amounts with 1 staker [ @skip-on-coverage ]", async () => {
       // lock 1 position
       await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
       await distributeProfits(fixture, accounts[0], profitETH, profitALCA);
@@ -51,7 +51,7 @@ describe("estimateFinalBonusWithProfits", async () => {
       expect(payoutToken).to.equal(expectedPayoutToken);
     });
 
-    it("returns expected amounts with 1 staker in precision mode", async () => {
+    it("returns expected amounts with 1 staker in precision mode [ @skip-on-coverage ]", async () => {
       // lock 1 position
       await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
       await distributeProfits(fixture, accounts[0], profitETH, profitALCA);
@@ -73,7 +73,7 @@ describe("estimateFinalBonusWithProfits", async () => {
       expect(payoutToken).to.equal(expectedPayoutToken);
     });
 
-    it("returns expected amounts with multiple stakers", async () => {
+    it("returns expected amounts with multiple stakers [ @skip-on-coverage ]", async () => {
       for (let i = 1; i <= numberOfLockingUsers; i++) {
         await lockStakedNFT(fixture, accounts[i], stakedTokenIDs[i]);
       }
@@ -96,7 +96,7 @@ describe("estimateFinalBonusWithProfits", async () => {
       expect(payoutToken).to.equal(expectedPayoutToken);
     });
 
-    it("returns expected amounts with multiple stakers in precision mode", async () => {
+    it("returns expected amounts with multiple stakers in precision mode [ @skip-on-coverage ]", async () => {
       for (let i = 1; i <= numberOfLockingUsers; i++) {
         await lockStakedNFT(fixture, accounts[i], stakedTokenIDs[i]);
       }
@@ -127,7 +127,7 @@ describe("estimateFinalBonusWithProfits", async () => {
         await distributeProfits(fixture, accounts[0], profitETH, profitALCA);
       });
 
-      it("returns expected amounts with all users calling collectAllProfits", async () => {
+      it("returns expected amounts with all users calling collectAllProfits [ @skip-on-coverage ]", async () => {
         for (let i = 1; i <= numberOfLockingUsers; i++) {
           await fixture.lockup.connect(accounts[i]).collectAllProfits();
         }
@@ -166,7 +166,7 @@ describe("estimateFinalBonusWithProfits", async () => {
         }
       });
 
-      it("returns expected amounts with single user calling collectAllProfits", async () => {
+      it("returns expected amounts with single user calling collectAllProfits [ @skip-on-coverage ]", async () => {
         await fixture.lockup.connect(accounts[1]).collectAllProfits();
 
         for (let i = 1; i <= numberOfLockingUsers; i++) {
@@ -213,7 +213,7 @@ describe("estimateFinalBonusWithProfits", async () => {
           );
         }
       });
-      it("returns expected amounts with single user calling collectAllProfits in precise mode", async () => {
+      it("returns expected amounts with single user calling collectAllProfits in precise mode [ @skip-on-coverage ]", async () => {
         await fixture.lockup.connect(accounts[1]).collectAllProfits();
 
         for (let i = 1; i <= numberOfLockingUsers; i++) {
@@ -261,14 +261,14 @@ describe("estimateFinalBonusWithProfits", async () => {
       ));
     });
 
-    it("reverts when called with non existant token id", async () => {
+    it("reverts when called with non existant token id [ @skip-on-coverage ]", async () => {
       const tokenId = 1234;
       await expect(fixture.lockup.estimateFinalBonusWithProfits(tokenId, false))
         .to.be.revertedWithCustomError(fixture.lockup, "TokenIDNotLocked")
         .withArgs(tokenId);
     });
 
-    it("reverts when called with a token id that has unlocked", async () => {
+    it("reverts when called with a token id that has unlocked [ @skip-on-coverage ]", async () => {
       const tokenId = stakedTokenIDs[1];
       await lockStakedNFT(fixture, accounts[1], tokenId);
       await distributeProfits(fixture, accounts[0], profitETH, profitALCA);
@@ -283,7 +283,7 @@ describe("estimateFinalBonusWithProfits", async () => {
         .withArgs(tokenId);
     });
 
-    it("returns expected amounts with 1 staker", async () => {
+    it("returns expected amounts with 1 staker [ @skip-on-coverage ]", async () => {
       // lock 1 position
       await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
       await distributeProfits(fixture, accounts[0], profitETH, profitALCA);
@@ -314,7 +314,7 @@ describe("estimateFinalBonusWithProfits", async () => {
       );
     });
 
-    it("returns expected amounts with multiple stakers", async () => {
+    it("returns expected amounts with multiple stakers [ @skip-on-coverage ]", async () => {
       for (let i = 1; i <= numberOfLockingUsers; i++) {
         await lockStakedNFT(fixture, accounts[i], stakedTokenIDs[i]);
       }
@@ -355,7 +355,7 @@ describe("estimateFinalBonusWithProfits", async () => {
       }
     });
 
-    it("returns expected amounts with multiple stakers in precise mode", async () => {
+    it("returns expected amounts with multiple stakers in precise mode [ @skip-on-coverage ]", async () => {
       for (let i = 1; i <= numberOfLockingUsers; i++) {
         await lockStakedNFT(fixture, accounts[i], stakedTokenIDs[i]);
       }
@@ -404,7 +404,7 @@ describe("estimateFinalBonusWithProfits", async () => {
         await distributeProfits(fixture, accounts[0], profitETH, profitALCA);
       });
 
-      it("returns expected amounts with collectAllProfits", async () => {
+      it("returns expected amounts with collectAllProfits [ @skip-on-coverage ]", async () => {
         for (let i = 1; i <= numberOfLockingUsers; i++) {
           await fixture.lockup.connect(accounts[i]).collectAllProfits();
         }
@@ -453,7 +453,7 @@ describe("estimateFinalBonusWithProfits", async () => {
         }
       });
 
-      it("returns expected amounts with 1 collectAllProfits", async () => {
+      it("returns expected amounts with 1 collectAllProfits [ @skip-on-coverage ]", async () => {
         await fixture.lockup.connect(accounts[1]).collectAllProfits();
 
         for (let i = 1; i <= numberOfLockingUsers; i++) {
@@ -500,7 +500,7 @@ describe("estimateFinalBonusWithProfits", async () => {
           );
         }
       });
-      it("returns expected amounts with 1 collectAllProfits in precise mode", async () => {
+      it("returns expected amounts with 1 collectAllProfits in precise mode [ @skip-on-coverage ]", async () => {
         await fixture.lockup.connect(accounts[1]).collectAllProfits();
 
         for (let i = 1; i <= numberOfLockingUsers; i++) {
@@ -538,7 +538,7 @@ describe("estimateFinalBonusWithProfits", async () => {
         }
       });
 
-      it("returns expected amounts with multiple distributions", async () => {
+      it("returns expected amounts with multiple distributions [ @skip-on-coverage ]", async () => {
         const numberOfCollectingUsers = 2;
         let expectedPayoutEth = 0n;
         let expectedPayoutToken = 0n;
@@ -628,7 +628,7 @@ describe("estimateFinalBonusWithProfits", async () => {
         }
       });
 
-      it("returns expected amounts with multiple distributions in precise mode", async () => {
+      it("returns expected amounts with multiple distributions in precise mode [ @skip-on-coverage ]", async () => {
         await fixture.lockup.connect(accounts[1]).collectAllProfits();
         await fixture.lockup.connect(accounts[2]).collectAllProfits();
         await distributeProfits(fixture, accounts[0], profitETH, profitALCA);
@@ -668,7 +668,7 @@ describe("estimateFinalBonusWithProfits", async () => {
         }
       });
 
-      it("returns expected amounts with aggregateProfits", async () => {
+      it("returns expected amounts with aggregateProfits [ @skip-on-coverage ]", async () => {
         await jumpToPostLockState(fixture);
         await fixture.lockup.aggregateProfits();
 
@@ -725,7 +725,7 @@ describe("estimateFinalBonusWithProfits", async () => {
         }
       });
 
-      it("returns expected amounts with aggregateProfits in precise mode", async () => {
+      it("returns expected amounts with aggregateProfits in precise mode [ @skip-on-coverage ]", async () => {
         await jumpToPostLockState(fixture);
         await fixture.lockup.aggregateProfits();
 

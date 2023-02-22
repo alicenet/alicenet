@@ -66,7 +66,7 @@ contract("SnapshotRingBuffer 0state", async () => {
       expect(lastSnapshot.blockClaims.height).to.equal(epochs * epochLength);
     });
 
-    it("adds 6 new snapshots to the snapshot buffer does a validator change and adds 6 more snapshots", async () => {
+    it("adds 6 new snapshots to the snapshot buffer does a validator change and adds 6 more snapshots [ @skip-on-coverage ]", async () => {
       let epochs = (await fixture.snapshots.getEpoch()).toNumber();
       const signedSnapshots = signedData1;
       const validators: Array<string> = [];

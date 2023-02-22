@@ -88,6 +88,7 @@ func (a *Application) UnmarshalTx(txb []byte) (interfaces.Transaction, error) {
 	return tx, nil
 }
 
+// convertTxToIface converts a transaction to a transaction interface
 func (a *Application) convertTxToIface(txs []*objs.Tx) []interfaces.Transaction {
 	out := make([]interfaces.Transaction, len(txs))
 	for i := 0; i < len(txs); i++ {
@@ -96,6 +97,7 @@ func (a *Application) convertTxToIface(txs []*objs.Tx) []interfaces.Transaction 
 	return out
 }
 
+// convertIfaceToTx converts a transaction interface to a transaction
 func (a *Application) convertIfaceToTx(txs []interfaces.Transaction) ([]*objs.Tx, bool) {
 	out := make([]*objs.Tx, len(txs))
 	for i := 0; i < len(txs); i++ {
@@ -172,10 +174,12 @@ func (a *Application) IsValid(txn *badger.Txn, chainID, height uint32, stateHash
 	return true, nil
 }
 
-// GetValidProposal is a function that returns a list of transactions
-// that will cause a valid state transition function for the local node's
-// current state. This is the function used to create a new proposal.
-// comes from application logic.
+// GetValidProposal returns a list of transactions
+// that cause a valid state transition function for the local node's
+// current state as well as the new StateRoot (root hash of the state trie)
+// after applying those transactions.
+// This is the function used to create a new proposal
+// and comes from application logic.
 func (a *Application) GetValidProposal(txn *badger.Txn, chainID, height, maxBytes uint32) ([]interfaces.Transaction, []byte, error) {
 	r, h, err := a.txHandler.GetTxsForProposal(txn, chainID, height, a.defaultCurveSpec, a.defaultSigner, maxBytes)
 	if err != nil {
@@ -185,10 +189,8 @@ func (a *Application) GetValidProposal(txn *badger.Txn, chainID, height, maxByte
 	return a.convertTxToIface(r), h, nil
 }
 
-// ApplyState is a function that returns a list of transactions
-// that will cause a valid state transition function for the local node's
-// current state. This is the function used to create a new proposal.
-// comes from application logic.
+// ApplyState updates the state trie from a list of transactions
+// and returns the new StateRoot (root hash of the state trie).
 func (a *Application) ApplyState(txn *badger.Txn, chainID, height uint32, txs []interfaces.Transaction) (stateHash []byte, err error) {
 	tx, ok := a.convertIfaceToTx(txs)
 	if !ok {
@@ -299,6 +301,10 @@ func (a *Application) UTXOGetData(txn *badger.Txn, curveSpec constants.CurveSpec
 	return a.txHandler.UTXOGetData(txn, owner, dataIdx)
 }
 
+// GetValueForOwner returns a list utxoIDs and value for the specified account.
+// The purpose of this function is to allow for a user to request
+// a specific value and then to receive a list of utxoIDs whose sum
+// is greater than or equal to the requested value.
 func (a *Application) GetValueForOwner(txn *badger.Txn, curveSpec constants.CurveSpec, account []byte, minValue *uint256.Uint256, ptBytes []byte) ([][]byte, *uint256.Uint256, *objs.PaginationToken, error) {
 	owner := &objs.Owner{}
 	err := owner.New(account, curveSpec)
@@ -320,7 +326,7 @@ func (a *Application) GetValueForOwner(txn *badger.Txn, curveSpec constants.Curv
 	return a.txHandler.GetValueForOwner(txn, owner, minValue, pt)
 }
 
-// UTXOGet returns a list of UTXO objects.
+// UTXOGet returns a list of UTXO objects as specified by the utxoIDs.
 func (a *Application) UTXOGet(txn *badger.Txn, utxoIDs [][]byte) ([]*objs.TXOut, error) {
 	return a.txHandler.UTXOGet(txn, utxoIDs)
 }

@@ -203,7 +203,7 @@ func (dso *DataStoreOwner) Sign(msg []byte, s Signer) (*DataStoreSignature, erro
 	}
 }
 
-// DataStoreSignature ...
+// DataStoreSignature stores the signature for a datastore
 type DataStoreSignature struct {
 	SVA       SVA
 	CurveSpec constants.CurveSpec

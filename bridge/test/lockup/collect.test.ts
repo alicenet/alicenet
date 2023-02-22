@@ -45,7 +45,7 @@ describe("Testing Collect", async () => {
     assert.deepEqual(await getState(fixture), expectedState);
   });
 
-  it("should collect for calling user", async () => {
+  it("should collect for calling user [ @skip-on-coverage ]", async () => {
     for (let i = 1; i <= numberOfLockingUsers; i++) {
       const userLockingInfo = await getUserLockingInfo(fixture, i);
       const expectedState = await getState(fixture);
@@ -77,7 +77,7 @@ describe("Testing Collect", async () => {
     }
   });
 
-  it("should not collect for calling user with previous unlocking-early", async () => {
+  it("should not collect for calling user with previous unlocking-early [ @skip-on-coverage ]", async () => {
     for (let i = 1; i <= numberOfLockingUsers; i++) {
       const userLockingInfo = await getUserLockingInfo(fixture, i);
       const exitAmount = userLockingInfo.userInitialShares;
@@ -88,7 +88,7 @@ describe("Testing Collect", async () => {
     }
   });
 
-  it("should not collect in post lock state", async () => {
+  it("should not collect in post lock state [ @skip-on-coverage ]", async () => {
     await jumpToPostLockState(fixture);
     await expect(
       fixture.lockup.connect(accounts[1]).collectAllProfits()

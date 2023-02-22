@@ -76,7 +76,7 @@ describe("Testing Unlock", async () => {
     ));
   });
 
-  it("unlock all positions with no early exits", async () => {
+  it("unlock all positions with no early exits [ @skip-on-coverage ]", async () => {
     showState("Initial State with staked position", await getState(fixture));
     for (let i = 1; i <= numberOfLockingUsers; i++) {
       await lockStakedNFT(fixture, accounts[i], stakedTokenIDs[i]);
@@ -124,7 +124,7 @@ describe("Testing Unlock", async () => {
     showState("After Unlocking", await getState(fixture));
   });
 
-  it("unlock all positions with no early exits but excess in the bonus position", async () => {
+  it("unlock all positions with no early exits but excess in the bonus position [ @skip-on-coverage ]", async () => {
     showState("Initial State with staked position", await getState(fixture));
     for (let i = 1; i <= numberOfLockingUsers; i++) {
       await lockStakedNFT(fixture, accounts[i], stakedTokenIDs[i]);
@@ -184,7 +184,7 @@ describe("Testing Unlock", async () => {
     showState("After Unlocking", await getState(fixture));
   });
 
-  it("unlock all positions with biggest position exiting early", async () => {
+  it("unlock all positions with biggest position exiting early [ @skip-on-coverage ]", async () => {
     showState("Initial State with staked position", await getState(fixture));
     for (let i = 1; i <= numberOfLockingUsers; i++) {
       await lockStakedNFT(fixture, accounts[i], stakedTokenIDs[i]);
@@ -255,7 +255,7 @@ describe("Testing Unlock", async () => {
     assert.deepEqual(await getState(fixture), expectedState);
   });
 
-  it("unlock all positions with 2 position exiting early", async () => {
+  it("unlock all positions with 2 position exiting early [ @skip-on-coverage ]", async () => {
     showState("Initial State with staked position", await getState(fixture));
     for (let i = 1; i <= numberOfLockingUsers; i++) {
       await lockStakedNFT(fixture, accounts[i], stakedTokenIDs[i]);
@@ -365,7 +365,7 @@ describe("Testing Unlock", async () => {
     assert.deepEqual(currentState, expectedState);
   });
 
-  it("unlock all positions with partially exits", async () => {
+  it("unlock all positions with partially exits [ @skip-on-coverage ]", async () => {
     showState("Initial State with staked position", await getState(fixture));
     for (let i = 1; i <= numberOfLockingUsers; i++) {
       await lockStakedNFT(fixture, accounts[i], stakedTokenIDs[i]);
@@ -460,7 +460,7 @@ describe("Testing Unlock", async () => {
     assert.deepEqual(currentState, expectedState);
   });
 
-  it("unlock all positions with no early exits and re-stake", async () => {
+  it("unlock all positions with no early exits and re-stake [ @skip-on-coverage ]", async () => {
     showState("Initial State with staked position", await getState(fixture));
     for (let i = 1; i <= numberOfLockingUsers; i++) {
       await lockStakedNFT(fixture, accounts[i], stakedTokenIDs[i]);
@@ -516,7 +516,7 @@ describe("Testing Unlock", async () => {
     showState("After Unlocking", await getState(fixture));
   });
 
-  it("unlockTo another address and re-stake some", async () => {
+  it("unlockTo another address and re-stake some [ @skip-on-coverage ]", async () => {
     for (let i = 1; i <= numberOfLockingUsers; i++) {
       await lockStakedNFT(fixture, accounts[i], stakedTokenIDs[i]);
     }

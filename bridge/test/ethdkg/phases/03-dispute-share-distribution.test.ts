@@ -26,7 +26,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     function deployFixture() {
       return startAtDistributeShares(validators4);
     }
-    it("should not allow accusations before time", async function () {
+    it("should not allow accusations before time [ @skip-on-coverage ]", async function () {
       const [ethdkg, ,] = await loadFixture(deployFixture);
 
       await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
@@ -66,7 +66,7 @@ describe("ETHDKG: Dispute bad shares", () => {
         ]);
     });
 
-    it("should not allow accusations unless in DisputeShareDistribution phase, or expired ShareDistribution phase", async function () {
+    it("should not allow accusations unless in DisputeShareDistribution phase, or expired ShareDistribution phase [ @skip-on-coverage ]", async function () {
       const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
         deployFixture
       );
@@ -360,7 +360,7 @@ describe("ETHDKG: Dispute bad shares", () => {
         ]);
     });
 
-    it("should not allow accusation of a non-participating validator", async function () {
+    it("should not allow accusation of a non-participating validator [ @skip-on-coverage ]", async function () {
       const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
         deployFixture
       );
@@ -400,7 +400,7 @@ describe("ETHDKG: Dispute bad shares", () => {
         .withArgs(validators4[3].address);
     });
 
-    it("should not allow accusation from a non-participating validator", async function () {
+    it("should not allow accusation from a non-participating validator [ @skip-on-coverage ]", async function () {
       const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
         deployFixture
       );
@@ -439,7 +439,7 @@ describe("ETHDKG: Dispute bad shares", () => {
         .withArgs(ethers.utils.getAddress(validators4[3].address));
     });
 
-    it("should not allow accusation with an incorrect index", async function () {
+    it("should not allow accusation with an incorrect index [ @skip-on-coverage ]", async function () {
       const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
         deployFixture
       );
@@ -459,7 +459,7 @@ describe("ETHDKG: Dispute bad shares", () => {
       // await endCurrentPhase(ethdkg)
     });
 
-    it("should not allow accusation with incorrect encrypted shares or commitments", async function () {
+    it("should not allow accusation with incorrect encrypted shares or commitments [ @skip-on-coverage ]", async function () {
       const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
         deployFixture
       );
@@ -503,7 +503,7 @@ describe("ETHDKG: Dispute bad shares", () => {
     });
   });
 
-  it("should not allow double accusation of a validator on two separate calls", async function () {
+  it("should not allow double accusation of a validator on two separate calls [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] =
       await startAtDistributeShares(validators4BadDistributeShares);
 
@@ -572,7 +572,7 @@ describe("ETHDKG: Dispute bad shares", () => {
       );
   });
 
-  it("should not allow double accusation of a validator on two separate calls, with a different index order", async function () {
+  it("should not allow double accusation of a validator on two separate calls, with a different index order [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] =
       await startAtDistributeShares(validators4BadDistributeSharesLast);
 
@@ -650,7 +650,7 @@ describe("ETHDKG: Dispute bad shares", () => {
       );
   });
 
-  it("should not allow proceeding to next phase (KeyShareSubmission) after accusations take place", async function () {
+  it("should not allow proceeding to next phase (KeyShareSubmission) after accusations take place [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] =
       await startAtDistributeShares(validators4BadDistributeShares);
 
@@ -726,7 +726,7 @@ describe("ETHDKG: Dispute bad shares", () => {
       ]);
   });
 
-  it("should not allow proceeding to next phase (KeyShareSubmission) after bad shares accusations take place, along with accusations of non-participant validators", async function () {
+  it("should not allow proceeding to next phase (KeyShareSubmission) after bad shares accusations take place, along with accusations of non-participant validators [ @skip-on-coverage ]", async function () {
     const [ethdkg, validatorPool, expectedNonce] =
       await startAtDistributeShares(validators4BadDistributeShares);
 

@@ -352,7 +352,7 @@ func main() {
 
 	go func() {
 		sig := <-signals
-		logger.Warnf("Recieved shutdown signal %s", sig)
+		logger.Warnf("Received shutdown signal %s", sig)
 		cf()
 	}()
 

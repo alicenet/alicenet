@@ -105,7 +105,7 @@ describe("BonusPool", async () => {
   });
 
   describe("createBonusStakedPosition", async () => {
-    it("Reverts if insufficient ALCA to stake", async () => {
+    it("Reverts if insufficient ALCA to stake [ @skip-on-coverage ]", async () => {
       const shortStakeAmount = fixture.totalBonusAmount.sub(1);
       await (
         await fixture.alca
@@ -124,7 +124,7 @@ describe("BonusPool", async () => {
         )
         .withArgs(shortStakeAmount, fixture.totalBonusAmount);
     });
-    it("Succeeds if called from factory address and has enough ALCA", async () => {
+    it("Succeeds if called from factory address and has enough ALCA [ @skip-on-coverage ]", async () => {
       const exactStakeAmount = fixture.totalBonusAmount;
       await (
         await fixture.alca
@@ -142,7 +142,7 @@ describe("BonusPool", async () => {
         .withArgs(expectedTokenId);
     });
 
-    it("Reverts if bonus position already created", async () => {
+    it("Reverts if bonus position already created [ @skip-on-coverage ]", async () => {
       const exactStakeAmount = fixture.totalBonusAmount;
       await (
         await fixture.alca
@@ -168,7 +168,7 @@ describe("BonusPool", async () => {
   });
 
   describe("receive", async () => {
-    it("Reverts if sent from non public staking address", async () => {
+    it("Reverts if sent from non public staking address [ @skip-on-coverage ]", async () => {
       const ethAmount = BigNumber.from(1234);
 
       await expect(
@@ -179,7 +179,7 @@ describe("BonusPool", async () => {
       );
     });
 
-    it("Succeeds if sent from public staking address", async () => {
+    it("Succeeds if sent from public staking address [ @skip-on-coverage ]", async () => {
       const ethAmount = BigNumber.from(1234);
 
       const bonusPoolEthBalanceBefore = await ethers.provider.getBalance(
@@ -203,7 +203,7 @@ describe("BonusPool", async () => {
   });
 
   describe("terminate", async () => {
-    it("Reverts if bonus NFT is not created", async () => {
+    it("Reverts if bonus NFT is not created [ @skip-on-coverage ]", async () => {
       await expect(
         fixture.bonusPool.connect(fixture.mockLockupSigner).terminate()
       ).to.be.revertedWithCustomError(
@@ -212,7 +212,7 @@ describe("BonusPool", async () => {
       );
     });
 
-    it("Reverts if called before minted bonus stake free after time not reached", async () => {
+    it("Reverts if called before minted bonus stake free after time not reached [ @skip-on-coverage ]", async () => {
       await mintBonusPosition(
         accounts,
         fixture.totalBonusAmount,
@@ -242,7 +242,7 @@ describe("BonusPool", async () => {
         );
       });
 
-      it("Distributes all bonus eth/tokens to reward pool", async () => {
+      it("Distributes all bonus eth/tokens to reward pool [ @skip-on-coverage ]", async () => {
         const [, freeAfter, , , ,] = await fixture.publicStaking.getPosition(
           tokenId
         );

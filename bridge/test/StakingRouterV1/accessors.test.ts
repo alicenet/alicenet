@@ -109,7 +109,7 @@ describe("StakingRouterV1 - accessors", async () => {
     ({ fixture } = await loadFixture(deployFixture));
   });
 
-  it("getLegacyTokenAddress returns expected address", async () => {
+  it("getLegacyTokenAddress returns expected address [ @skip-on-coverage ]", async () => {
     expect(await fixture.stakingRouterV1.getLegacyTokenAddress()).to.equal(
       await fixture.legacyToken.address
     );

@@ -17,10 +17,13 @@ import (
 	"github.com/alicenet/alicenet/utils"
 )
 
+// NewHeightIdxIndexer makes a new HeightIdxIndex
 func NewHeightIdxIndex(p, pp prefixFunc) *HeightIdxIndex {
 	return &HeightIdxIndex{p, pp}
 }
 
+// HeightIdxIndex is an indexer which stores the height and index
+// of a tx; this is used in the mined tx handler.
 type HeightIdxIndex struct {
 	prefix    prefixFunc
 	prefixRef prefixFunc
@@ -54,6 +57,7 @@ func (hiirk *HeightIdxIndexRefKey) UnmarshalBinary(data []byte) {
 	hiirk.refkey = utils.CopySlice(data)
 }
 
+// Add adds a tx to the indexer by storing the txhash and the height and index
 func (hii *HeightIdxIndex) Add(txn *badger.Txn, txHash []byte, height, idx uint32) error {
 	hiiKey := hii.makeKey(txHash)
 	key := hiiKey.MarshalBinary()
@@ -67,6 +71,7 @@ func (hii *HeightIdxIndex) Add(txn *badger.Txn, txHash []byte, height, idx uint3
 	return utils.SetValue(txn, key, heightIdx)
 }
 
+// Delete removes a tx from the indexer
 func (hii *HeightIdxIndex) Delete(txn *badger.Txn, txHash []byte) error {
 	hiiKey := hii.makeKey(txHash)
 	key := hiiKey.MarshalBinary()
@@ -87,6 +92,7 @@ func (hii *HeightIdxIndex) Delete(txn *badger.Txn, txHash []byte) error {
 	return utils.DeleteValue(txn, key)
 }
 
+// GetHeightIdx returns the height and index of the tx
 func (hii *HeightIdxIndex) GetHeightIdx(txn *badger.Txn, txHash []byte) (uint32, uint32, error) {
 	hiiKey := hii.makeKey(txHash)
 	key := hiiKey.MarshalBinary()
@@ -97,6 +103,7 @@ func (hii *HeightIdxIndex) GetHeightIdx(txn *badger.Txn, txHash []byte) (uint32,
 	return hii.getHeightIdx(heightIdx)
 }
 
+// GetTxHashFromHeightIdx returns the txhash corresponding to the height and index
 func (hii *HeightIdxIndex) GetTxHashFromHeightIdx(txn *badger.Txn, height, idx uint32) ([]byte, error) {
 	hiiRefKey := hii.makeRefKey(height, idx)
 	refKey := hiiRefKey.MarshalBinary()

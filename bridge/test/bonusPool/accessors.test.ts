@@ -83,19 +83,19 @@ describe("BonusPool", async () => {
   });
 
   describe("Public accessors", async () => {
-    it("getLockupContractAddress returns lockup contract address", async () => {
+    it("getLockupContractAddress returns lockup contract address [ @skip-on-coverage ]", async () => {
       expect(await fixture.bonusPool.getLockupContractAddress()).to.equal(
         fixture.lockupAddress
       );
     });
 
-    it("getRewardPoolAddress returns lockup contract address", async () => {
+    it("getRewardPoolAddress returns lockup contract address [ @skip-on-coverage ]", async () => {
       expect(await fixture.bonusPool.getRewardPoolAddress()).to.equal(
         fixture.rewardPoolAddress
       );
     });
 
-    it("getBonusStakedPosition returns token id of staked position", async () => {
+    it("getBonusStakedPosition returns token id of staked position [ @skip-on-coverage ]", async () => {
       const tokenId = await mintBonusPosition(
         accounts,
         fixture.totalBonusAmount,
@@ -110,7 +110,7 @@ describe("BonusPool", async () => {
   });
 
   describe("estimateBonusAmountWithReward", async () => {
-    it("Returns expected amount based on bonus rate", async () => {
+    it("Returns expected amount based on bonus rate [ @skip-on-coverage ]", async () => {
       const tokenId = await mintBonusPosition(
         accounts,
         fixture.totalBonusAmount,

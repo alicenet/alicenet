@@ -11,10 +11,12 @@ import (
 
 var ErrIterClose = errors.New("iter closed")
 
+// NewInsertionOrderIndex returns a new InsertionOrderIndex
 func NewInsertionOrderIndex(p, pp prefixFunc) *InsertionOrderIndexer {
 	return &InsertionOrderIndexer{p, pp}
 }
 
+// InsertionOrderIndexer is an index which allows for ordering txs for insertion
 type InsertionOrderIndexer struct {
 	prefix    prefixFunc
 	revPrefix prefixFunc
@@ -48,6 +50,7 @@ func (ioirk *InsertionOrderIndexerRevKey) UnmarshalBinary(data []byte) {
 	ioirk.revkey = utils.CopySlice(data)
 }
 
+// Add adds a txhash to the indexer
 func (ioi *InsertionOrderIndexer) Add(txn *badger.Txn, txHash []byte) error {
 	txHashCopy := utils.CopySlice(txHash)
 	ioiIdxKey, ioiRevIdxKey, err := ioi.makeIndexKeys(txHashCopy)
@@ -67,6 +70,7 @@ func (ioi *InsertionOrderIndexer) Add(txn *badger.Txn, txHash []byte) error {
 	return nil
 }
 
+// Delete removes a txhash to the indexer
 func (ioi *InsertionOrderIndexer) Delete(txn *badger.Txn, txHash []byte) error {
 	txHashCopy := utils.CopySlice(txHash)
 	_, ioiRevIdxKey, err := ioi.makeIndexKeys(txHashCopy)
@@ -89,7 +93,6 @@ func (ioi *InsertionOrderIndexer) Delete(txn *badger.Txn, txHash []byte) error {
 	return nil
 }
 
-// func (ioi *InsertionOrderIndexer) makeIndexKeys(txHash []byte) ([]byte, []byte, error) {.
 func (ioi *InsertionOrderIndexer) makeIndexKeys(txHash []byte) (*InsertionOrderIndexerKey, *InsertionOrderIndexerRevKey, error) {
 	txHashCopy := utils.CopySlice(txHash)
 	ts := time.Now()
@@ -111,6 +114,7 @@ func (ioi *InsertionOrderIndexer) makeIndexKeys(txHash []byte) (*InsertionOrderI
 	return ioiKey, ioiRevKey, nil
 }
 
+// NewIter returns an iterator for iterating through the indexer
 func (ioi *InsertionOrderIndexer) NewIter(txn *badger.Txn) (*badger.Iterator, []byte) {
 	prefix := ioi.prefix()
 	opts := badger.DefaultIteratorOptions
