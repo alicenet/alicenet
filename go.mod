@@ -31,8 +31,8 @@ require (
 	golang.org/x/net v0.7.0
 	golang.org/x/sys v0.5.0
 	golang.org/x/tools v0.6.0
-	google.golang.org/genproto v0.0.0-20221227171554-f9683d7f8bef
-	google.golang.org/grpc v1.52.3
+	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f
+	google.golang.org/grpc v1.53.0
 	google.golang.org/protobuf v1.28.2-0.20220831092852-f930b1dc76e8
 )
 
@@ -62,7 +62,7 @@ require (
 	github.com/bufbuild/connect-go v1.5.0 // indirect
 	github.com/bufbuild/protocompile v0.2.0 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
-	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/dave/jennifer v1.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
