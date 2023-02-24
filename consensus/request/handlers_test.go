@@ -29,22 +29,46 @@ type HandlerMock struct {
 
 func (h *HandlerMock) PendingTxGet(txn *badger.Txn, height uint32, txHash [][]byte) ([]interfaces.Transaction, [][]byte, error) {
 	args := h.Called(txn, height, txHash)
-	return args.Get(0).([]interfaces.Transaction), args.Get(1).([][]byte), args.Error(2)
+	pendingTx, ok := args.Get(0).([]interfaces.Transaction)
+	if !ok {
+		panic("Unable to cast pending transaction")
+	}
+	hashValue, ok := args.Get(1).([][]byte)
+	if !ok {
+		panic("Unable to cast pending hash")
+	}
+	return pendingTx, hashValue, args.Error(2)
 }
 
 func (h *HandlerMock) MinedTxGet(txn *badger.Txn, txsHashes [][]byte) ([]interfaces.Transaction, [][]byte, error) {
 	args := h.Called(txn, txsHashes)
-	return args.Get(0).([]interfaces.Transaction), args.Get(1).([][]byte), args.Error(2)
+	minedTx, ok := args.Get(0).([]interfaces.Transaction)
+	if !ok {
+		panic("Unable to cast pending interfaces transaction")
+	}
+	hashValue, ok := args.Get(1).([][]byte)
+	if !ok {
+		panic("Unable to cast pending interfaces hash")
+	}
+	return minedTx, hashValue, args.Error(2)
 }
 
 func (h *HandlerMock) GetSnapShotNode(txn *badger.Txn, height uint32, key []byte) ([]byte, error) {
 	args := h.Called(txn, height, key)
-	return args.Get(0).([]byte), args.Error(1)
+	snapShotNode, ok := args.Get(0).([]byte)
+	if !ok {
+		panic("Unable to cast snap shot node")
+	}
+	return snapShotNode, args.Error(1)
 }
 
 func (h *HandlerMock) GetSnapShotStateData(txn *badger.Txn, key []byte) ([]byte, error) {
 	args := h.Called(txn, key)
-	return args.Get(0).([]byte), args.Error(1)
+	snapShotStateData, ok := args.Get(0).([]byte)
+	if !ok {
+		panic("Unable to cast snap shot state data")
+	}
+	return snapShotStateData, args.Error(1)
 }
 
 func initHandler(t *testing.T, done <-chan struct{}) *Handler {

@@ -129,7 +129,10 @@ func (bn *Server) KnownNodes(ctx context.Context, r *pb.BootNodeRequest) (*pb.Bo
 		return nil, nil
 	}
 	// convert to p2p types
-	caller := p.Addr.(interfaces.NodeAddr)
+	caller, ok := p.Addr.(interfaces.NodeAddr)
+	if !ok {
+		panic("Incorrect interface type NodeAddr")
+	}
 	callerAddr := caller.P2PAddr()
 	callerIdent := caller.Identity()
 
@@ -170,7 +173,10 @@ func (bn *Server) KnownNodes(ctx context.Context, r *pb.BootNodeRequest) (*pb.Bo
 			continue
 		}
 		// convert the addr to a string
-		addr := addrif.(string)
+		addr, ok := addrif.(string)
+		if !ok {
+			bn.log.Fatal("Bootnode addr type cast failed")
+		}
 		// append to the return list
 		returnList = append(returnList, addr)
 		// set the ident in the known map

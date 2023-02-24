@@ -83,7 +83,10 @@ func (pt *P2PTransport) NodeAddr() interfaces.NodeAddr {
 // protocol.
 func (pt *P2PTransport) Dial(addr interfaces.NodeAddr, protocol types.Protocol) (interfaces.P2PConn, error) {
 	// convert to raw type for access to non-interface methods
-	remoteAddr := addr.(*NodeAddr)
+	remoteAddr, ok := addr.(*NodeAddr)
+	if !ok {
+		panic("Unable to cast remote peer node address")
+	}
 	// convert p2pAddr into the expected format for brontide
 	btcAddr, err := remoteAddr.toBTCNetAddr()
 	if err != nil {
@@ -413,7 +416,10 @@ func (pt *P2PTransport) Accept() (interfaces.P2PConn, error) {
 			continue
 		}
 
-		bconn := conn.(*brontide.Conn)
+		bconn, ok := conn.(*brontide.Conn)
+		if !ok {
+			panic("Unable to cast connection")
+		}
 
 		return pt.doAliceNetPreHandshake(bconn), nil
 	}

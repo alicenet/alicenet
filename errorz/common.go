@@ -58,7 +58,11 @@ func (e *Err) trace(depth int, suffix ...interface{}) *Err {
 	if len(suffix) == 1 {
 		e.traces = append(e.traces, fmt.Sprintf("%v %v", trace, suffix[0]))
 	} else if len(suffix) > 1 {
-		e.traces = append(e.traces, trace+" "+fmt.Sprintf(suffix[0].(string), suffix[1:]...))
+		suffixString, ok := suffix[0].(string)
+		if !ok {
+			panic("Unable to cast suffix string")
+		}
+		e.traces = append(e.traces, trace+" "+fmt.Sprintf(suffixString, suffix[1:]...))
 	} else {
 		e.traces = append(e.traces, trace)
 	}

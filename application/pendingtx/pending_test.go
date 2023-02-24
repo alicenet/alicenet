@@ -28,7 +28,11 @@ type mockTrie struct {
 
 func (mt *mockTrie) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight uint32, deposits objs.Vout) (objs.Vout, error) {
 	args := mt.Called(txn, txs, currentHeight, deposits)
-	return args.Get(0).(objs.Vout), args.Error(1)
+	isValid, ok := args.Get(0).(objs.Vout)
+	if !ok {
+		panic("Unable to cast valid tx result")
+	}
+	return isValid, args.Error(1)
 }
 
 func (mt *mockTrie) TrieContains(txn *badger.Txn, utxo []byte) (bool, error) {
@@ -45,7 +49,19 @@ func (mt *mockTrie) Remove(utxo []byte) {
 
 func (mt *mockTrie) Get(txn *badger.Txn, utxoIDs [][]byte) ([]*objs.TXOut, [][]byte, []*objs.TXOut, error) {
 	args := mt.Called(txn, utxoIDs)
-	return args.Get(0).([]*objs.TXOut), args.Get(1).([][]byte), args.Get(2).([]*objs.TXOut), args.Error(3)
+	txOut0, ok := args.Get(0).([]*objs.TXOut)
+	if !ok {
+		panic("Unable to cast valid tx(0) out")
+	}
+	txHash, ok := args.Get(1).([][]byte)
+	if !ok {
+		panic("Unable to cast valid tx hash")
+	}
+	txOut1, ok := args.Get(2).([]*objs.TXOut)
+	if !ok {
+		panic("Unable to cast valid tx(1) out")
+	}
+	return txOut0, txHash, txOut1, args.Error(3)
 }
 
 func testingOwner() objs.Signer {

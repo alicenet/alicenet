@@ -711,13 +711,20 @@ func (tm *TaskManager) UnmarshalJSON(raw []byte) error {
 		// Marshalling service handlers is mostly non-sense, so
 		isAdminClient := reflect.TypeOf(t).Implements(adminInterface)
 		if isAdminClient {
-			adminClient := t.(monitorInterfaces.AdminClient)
+			adminClient, ok := t.(monitorInterfaces.AdminClient)
+			if !ok {
+				panic("Unable to cast admin client")
+			}
 			adminClient.SetAdminHandler(tm.adminHandler)
 		}
 
+		task, ok := t.(tasks.Task)
+		if !ok {
+			panic("Unable to cast task")
+		}
 		tm.Schedule[k] = ManagerRequestInfo{
 			BaseRequest: v.BaseRequest,
-			Task:        t.(tasks.Task),
+			Task:        task,
 			killedAt:    v.killedAt,
 		}
 	}
