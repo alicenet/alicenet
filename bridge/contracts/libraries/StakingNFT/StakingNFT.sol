@@ -637,8 +637,8 @@ abstract contract StakingNFT is
     function _getPositionToCollect(
         uint256 tokenID_
     ) internal view returns (Position memory position) {
-        address owner = ownerOf(tokenID_);
-        if (msg.sender != owner) {
+        address nftOwner = ownerOf(tokenID_);
+        if (msg.sender != nftOwner) {
             revert StakingNFTErrors.CallerNotTokenOwner(msg.sender);
         }
         position = _positions[tokenID_];
