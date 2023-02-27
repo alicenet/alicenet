@@ -186,10 +186,6 @@ abstract contract StakingNFT is
         _delegateOwnerAllowedDuration = 0;
     }
 
-    /**
-     * @dev owner returns the address
-     */
-
     /// mint allows a staking position to be opened. This function
     /// requires the caller to have performed an approve invocation against
     /// ALCA into this contract. This function will fail if the circuit
@@ -277,7 +273,8 @@ abstract contract StakingNFT is
         payoutEth = _collectEthTo(to_, tokenID_);
     }
 
-    /// @dev returns the owner when the delegateOwner allowed duration is in range, returns factory owner otherwise
+    /// @dev returns the owner when the delegateOwner allowed duration is in range, returns factory
+    /// owner otherwise
     function owner() public view returns (address) {
         if (block.number <= _delegateOwnerAllowedDuration) {
             return _delegateOwner;
