@@ -19,6 +19,7 @@ import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/interfaces/IStakingNFTDescriptor.sol";
 import "contracts/libraries/errors/StakingNFTErrors.sol";
 import "contracts/libraries/errors/CircuitBreakerErrors.sol";
+import "contracts/interfaces/IAliceNetFactory.sol";
 
 abstract contract StakingNFT is
     Initializable,
@@ -48,6 +49,7 @@ abstract contract StakingNFT is
         if (msg.sender != _factoryAddress() || msg.sender != owner()) {
             revert StakingNFTErrors.OnlyFactoryOrOwner();
         }
+        _;
     }
 
     constructor()
@@ -285,7 +287,7 @@ abstract contract StakingNFT is
         if (block.number <= _delegateOwnerAllowedDuration) {
             return _delegateOwner;
         }
-        return _factoryAddress().owner();
+        return IAliceNetFactory(_factoryAddress()).owner();
     }
 
     /// gets the total amount of ALCA staked in contract
