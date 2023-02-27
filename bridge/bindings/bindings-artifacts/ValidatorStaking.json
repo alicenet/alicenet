@@ -178,11 +178,6 @@
     "type": "error"
   },
   {
-    "inputs": [],
-    "name": "OnlyFactoryOrOwner",
-    "type": "error"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -1120,13 +1115,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "revokeDelegateOwner",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -1201,11 +1189,6 @@
         "internalType": "address",
         "name": "owner_",
         "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "allowedDuration",
-        "type": "uint256"
       }
     ],
     "name": "setDelegateOwner",

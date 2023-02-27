@@ -47,12 +47,6 @@ abstract contract StakingNFT is
         }
         _;
     }
-    modifier onlyFactoryOrOwner() {
-        if (msg.sender != _factoryAddress() || msg.sender != owner()) {
-            revert StakingNFTErrors.OnlyFactoryOrOwner();
-        }
-        _;
-    }
 
     constructor()
         ImmutableFactory(msg.sender)
@@ -171,23 +165,12 @@ abstract contract StakingNFT is
         _reserveEth += msg.value;
     }
 
-    /**
-     * @dev setDelegateOwner sets the address that owner() will return when within the allowed duration
-     * @param owner_ the address to set as the delegate owner
-     * @param allowedDuration the number of blocks from now the delegate owner is valid for
-     */
-    function setDelegateOwner(address owner_, uint256 allowedDuration) public onlyFactory {
-        _delegateOwnerAllowedDuration = block.number + allowedDuration;
+    /// @dev setDelegateOwner sets the address that owner()
+    /// @param owner_ the address to set as the delegate owner
+    function setDelegateOwner(address owner_) public onlyFactory {
         address oldOwner = owner();
         _delegateOwner = owner_;
         emit OwnershipTransferred(oldOwner, owner_);
-    }
-
-    /**
-     * @dev revokeDelegateOwner sets _delegateOwnerAllowedDuration to 0
-     */
-    function revokeDelegateOwner() public onlyFactoryOrOwner {
-        _delegateOwnerAllowedDuration = 0;
     }
 
     /// mint allows a staking position to be opened. This function
@@ -277,13 +260,10 @@ abstract contract StakingNFT is
         payoutEth = _collectEthTo(to_, tokenID_);
     }
 
-    /// @dev returns the owner when the delegateOwner allowed duration is in range, returns factory
-    /// owner otherwise
+    /// @dev returns the owner of the contract (address allowed to set info on external market
+    /// places)
     function owner() public view returns (address) {
-        if (block.number <= _delegateOwnerAllowedDuration) {
-            return _delegateOwner;
-        }
-        return IAliceNetFactory(_factoryAddress()).owner();
+        return _delegateOwner;
     }
 
     /// gets the total amount of ALCA staked in contract

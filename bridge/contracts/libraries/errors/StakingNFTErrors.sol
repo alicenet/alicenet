@@ -12,5 +12,4 @@ library StakingNFTErrors {
     error BalanceLessThanReserve(uint256 balance, uint256 reserve);
     error SlushTooLarge(uint256 slush);
     error MintAmountZero();
-    error OnlyFactoryOrOwner();
 }

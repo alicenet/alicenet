@@ -55,8 +55,6 @@ abstract contract StakingNFTStorage {
     // state to keep track of the amount of ALCAs deposited and collected
     // from the contract
     uint256 internal _reserveToken;
-    // delegated owner address, returned by owner() when allowedDuration > block.number
+    // delegated owner address, returned by owner()
     address internal _delegateOwner;
-    // delegated owner allowed duration
-    uint256 internal _delegateOwnerAllowedDuration;
 }

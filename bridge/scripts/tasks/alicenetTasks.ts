@@ -1346,10 +1346,6 @@ task(
 )
   .addParam("factoryAddress", "address of the factory deploying the contract")
   .addParam("delegatorAddress", "address of account to set as delegator")
-  .addParam(
-    "duration",
-    "how long we are going to allow that address to be a delegator"
-  )
   .addOptionalParam(
     "waitConfirmation",
     "wait specified number of blocks between transactions",
@@ -1373,7 +1369,7 @@ task(
     );
     const calldata = publicStakingContract.interface.encodeFunctionData(
       "setDelegateOwner",
-      [taskArgs.delegatorAddress, taskArgs.duration]
+      [taskArgs.delegatorAddress]
     );
     // use the factory to call the A token minter
     await (
