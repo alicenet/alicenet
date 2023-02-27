@@ -455,6 +455,7 @@ export async function upgradeProxyTask(
     implementationBase,
     initializerArgs
   );
+
   const txResponse = await upgradeProxyGasSafe(
     deploymentConfigForContract.name,
     factory,

@@ -21,6 +21,9 @@ export function encodeInitCallData(
   implementationBase: ContractFactory,
   initializerArgs?: any[]
 ) {
+  if (initializerArgs === undefined || initializerArgs.length === 0) {
+    return "0x";
+  }
   try {
     return implementationBase.interface.encodeFunctionData(
       "initialize",
