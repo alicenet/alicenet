@@ -39,6 +39,8 @@ abstract contract StakingNFT is
     ImmutableGovernance,
     ImmutableStakingPositionDescriptor
 {
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
     modifier onlyIfTokenExists(uint256 tokenID_) {
         if (!_exists(tokenID_)) {
             revert StakingNFTErrors.InvalidTokenId(tokenID_);
@@ -176,7 +178,9 @@ abstract contract StakingNFT is
      */
     function setDelegateOwner(address owner_, uint256 allowedDuration) public onlyFactory {
         _delegateOwnerAllowedDuration = block.number + allowedDuration;
+        address oldOwner = owner();
         _delegateOwner = owner_;
+        emit OwnershipTransferred(oldOwner, owner_);
     }
 
     /**
