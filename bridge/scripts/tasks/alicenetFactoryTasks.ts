@@ -629,6 +629,10 @@ task(
     "initializerArgs",
     "input initializer arguments as comma separated string values, eg: --initializerArgs 'arg1, arg2'"
   )
+  .addFlag(
+    "skipInitializer",
+    "flag to skip the initializer check (useful if the contract does not need to be re-initialized"
+  )
   .addOptionalParam(
     "waitConfirmation",
     "wait specified number of blocks between transactions",
@@ -689,6 +693,8 @@ task(
       hre,
       taskArgs.waitConfirmation,
       undefined,
-      taskArgs.factoryAddress
+      taskArgs.factoryAddress,
+      undefined,
+      taskArgs.skipInitializer
     );
   });

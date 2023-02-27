@@ -422,7 +422,8 @@ export async function upgradeProxyTask(
   waitBlocks: number = 0,
   factory?: AliceNetFactory,
   factoryAddress?: string,
-  implementationBase?: ContractFactory
+  implementationBase?: ContractFactory,
+  skipInitializer?: boolean
 ) {
   const constructorArgs = Object.values(
     deploymentConfigForContract.constructorArgs
@@ -450,11 +451,10 @@ export async function upgradeProxyTask(
           deploymentConfigForContract.name
         )) as ContractFactory)
       : implementationBase;
-
-  const initCallData: string = encodeInitCallData(
-    implementationBase,
-    initializerArgs
-  );
+  let initCallData = "0x";
+  if (!skipInitializer) {
+    initCallData = encodeInitCallData(implementationBase, initializerArgs);
+  }
 
   const txResponse = await upgradeProxyGasSafe(
     deploymentConfigForContract.name,
