@@ -19,6 +19,7 @@ import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/interfaces/IStakingNFTDescriptor.sol";
 import "contracts/libraries/errors/StakingNFTErrors.sol";
 import "contracts/libraries/errors/CircuitBreakerErrors.sol";
+import "contracts/interfaces/IAliceNetFactory.sol";
 
 abstract contract StakingNFT is
     Initializable,
@@ -38,6 +39,8 @@ abstract contract StakingNFT is
     ImmutableGovernance,
     ImmutableStakingPositionDescriptor
 {
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
     modifier onlyIfTokenExists(uint256 tokenID_) {
         if (!_exists(tokenID_)) {
             revert StakingNFTErrors.InvalidTokenId(tokenID_);
@@ -162,6 +165,14 @@ abstract contract StakingNFT is
         _reserveEth += msg.value;
     }
 
+    /// @dev setDelegateOwner sets the address that owner()
+    /// @param owner_ the address to set as the delegate owner
+    function setDelegateOwner(address owner_) public onlyFactory {
+        address oldOwner = owner();
+        _delegateOwner = owner_;
+        emit OwnershipTransferred(oldOwner, owner_);
+    }
+
     /// mint allows a staking position to be opened. This function
     /// requires the caller to have performed an approve invocation against
     /// ALCA into this contract. This function will fail if the circuit
@@ -247,6 +258,12 @@ abstract contract StakingNFT is
     ) public returns (uint256 payoutEth, uint256 payoutToken) {
         payoutToken = _collectTokenTo(to_, tokenID_);
         payoutEth = _collectEthTo(to_, tokenID_);
+    }
+
+    /// @dev returns the owner of the contract (address allowed to set info on external market
+    /// places)
+    function owner() public view returns (address) {
+        return _delegateOwner;
     }
 
     /// gets the total amount of ALCA staked in contract
@@ -604,8 +621,8 @@ abstract contract StakingNFT is
     function _getPositionToCollect(
         uint256 tokenID_
     ) internal view returns (Position memory position) {
-        address owner = ownerOf(tokenID_);
-        if (msg.sender != owner) {
+        address nftOwner = ownerOf(tokenID_);
+        if (msg.sender != nftOwner) {
             revert StakingNFTErrors.CallerNotTokenOwner(msg.sender);
         }
         position = _positions[tokenID_];

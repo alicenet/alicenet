@@ -1341,6 +1341,44 @@ task("get-alcb-balance", "gets ALCB balance of account")
   });
 
 task(
+  "set-public-staking-delegator",
+  "set thea address that is able to change nft market place info"
+)
+  .addParam("factoryAddress", "address of the factory deploying the contract")
+  .addParam("delegatorAddress", "address of account to set as delegator")
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
+  .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmation,
+      hre
+    );
+    const factory = await hre.ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const publicStakingContract = await hre.ethers.getContractAt(
+      "PublicStaking",
+      await factory.callStatic.lookup(
+        hre.ethers.utils.formatBytes32String("PublicStaking")
+      )
+    );
+    const calldata = publicStakingContract.interface.encodeFunctionData(
+      "setDelegateOwner",
+      [taskArgs.delegatorAddress]
+    );
+    // use the factory to call the A token minter
+    await (
+      await factory.callAny(publicStakingContract.address, 0, calldata)
+    ).wait(waitConfirmationsBlocks);
+    console.log("Successfully set delegator!");
+  });
+
+task(
   "set-min-ethereum-blocks-per-snapshot",
   "Set the minimum number of ethereum blocks that we should wait between snapshots"
 )

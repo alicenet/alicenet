@@ -3,4 +3,6 @@ pragma solidity ^0.8.16;
 
 interface IAliceNetFactory {
     function lookup(bytes32 salt_) external view returns (address);
+
+    function owner() external view returns (address);
 }
