@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"regexp"
 	"sync"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/logging"
 	pb "github.com/alicenet/alicenet/proto"
 )
 
@@ -41,8 +41,9 @@ type Client struct {
 
 // Connect establishes communication between the client and the server.
 func (lrpc *Client) Connect(ctx context.Context) error {
+	logger := logging.GetLogger("localrpc")
 	err := func() error {
-		fmt.Println("connecting")
+		logger.Info("connecting")
 		lrpc.Lock()
 		defer lrpc.Unlock()
 		if lrpc.isConnected {
@@ -52,7 +53,7 @@ func (lrpc *Client) Connect(ctx context.Context) error {
 			lrpc.TimeOut = constants.MsgTimeout
 		}
 		// Set up a connection to the server.
-		ctx, cancel := context.WithTimeout(context.Background(), lrpc.TimeOut)
+		ctx, cancel := context.WithTimeout(ctx, lrpc.TimeOut)
 		defer cancel()
 		conn, err := grpc.DialContext(ctx, lrpc.Address, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 		if err != nil {
@@ -68,13 +69,13 @@ func (lrpc *Client) Connect(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("pinging server")
+	logger.Info("pinging server")
 	_, err = lrpc.GetBlockNumber(ctx)
 	if err != nil {
-		fmt.Printf("error pinging server: %v", err)
+		logger.Info("error pinging server: %v", err)
 		return err
 	}
-	fmt.Println("connected")
+	logger.Info("connected")
 	return nil
 }
 

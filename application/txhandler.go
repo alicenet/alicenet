@@ -296,7 +296,7 @@ func (tm *txHandler) UTXOGetData(txn *badger.Txn, owner *objs.Owner, dataIdx []b
 // The purpose of this function is to return a list UTXOs of a certain value
 // which may be consumed within a transaction.
 func (tm *txHandler) GetValueForOwner(txn *badger.Txn, owner *objs.Owner, minValue *uint256.Uint256, pt *objs.PaginationToken) ([][]byte, *uint256.Uint256, *objs.PaginationToken, error) {
-	const maxCount = 256
+	const maxCount = constants.MaxTxVectorLength
 	allIds := [][]byte{}
 
 	totalValue := uint256.Zero()

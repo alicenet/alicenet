@@ -129,6 +129,7 @@ func (esi *ExpSizeIndex) GetExpiredObjects(txn *badger.Txn, epoch, maxBytes uint
 		result = append(result, utxoID)
 		objCount++
 	}
+	//Todo: ask Chris! Remainder not divisible by hash.length.
 	remainingBytes := maxBytes - byteCount
 	return result, remainingBytes
 }
