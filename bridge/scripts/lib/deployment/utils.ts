@@ -534,12 +534,16 @@ export function calculateSalt(
   return saltType === undefined
     ? ethers.utils.formatBytes32String(salt)
     : ethers.utils.keccak256(
-        ethers.utils
-          .keccak256(ethers.utils.formatBytes32String(salt))
-          .concat(
-            ethers.utils
-              .keccak256(ethers.utils.formatBytes32String(saltType))
-              .slice(2)
-          )
-      );
+      ethers.utils
+        .keccak256(ethers.utils.formatBytes32String(salt))
+        .concat(
+          ethers.utils
+            .keccak256(ethers.utils.formatBytes32String(saltType))
+            .slice(2)
+        )
+    );
+}
+
+export async function silencePrompts() {
+  process.env.silencer = "true";
 }

@@ -28,6 +28,7 @@ import {
   parseWaitConfirmationInterval,
   promptCheckDeploymentArgs,
   readDeploymentConfig,
+  silencePrompts,
   writeDeploymentConfig,
 } from "../lib/deployment/utils";
 
@@ -70,12 +71,12 @@ task(
     const expectedField = "legacyToken_";
     if (
       deploymentConfig[expectedContractFullQualifiedName].constructorArgs[
-        expectedField
+      expectedField
       ] === undefined
     ) {
       throw new Error(
         `Couldn't find ${expectedField} in the constructor area for` +
-          ` ${expectedContractFullQualifiedName} inside ${taskArgs.configFile}`
+        ` ${expectedContractFullQualifiedName} inside ${taskArgs.configFile}`
       );
     }
 
@@ -232,7 +233,7 @@ task(
   .addFlag(
     "skipFirstTransaction",
     "The task executes 2 tx to execute the migrations." +
-      " Use this flag if you want to skip the first tx where we mint the NFTs"
+    " Use this flag if you want to skip the first tx where we mint the NFTs"
   )
   .addOptionalParam(
     "waitConfirmation",
@@ -740,7 +741,7 @@ task(
   .addFlag(
     "onlyOnce",
     "only execute aggregateProfits once instead of executing" +
-      " it until is safe to unlock (very gas consuming)"
+    " it until is safe to unlock (very gas consuming)"
   )
   .addOptionalParam(
     "waitConfirmation",
@@ -1511,7 +1512,7 @@ task(
       });
       try {
         transactions.push(await accounts[2].sendTransaction(txRequest));
-      } catch {}
+      } catch { }
       txRequest = await accounts[1].populateTransaction({
         from: accounts[1].address,
         nonce: await accounts[1].getTransactionCount("pending"),
@@ -1521,7 +1522,7 @@ task(
       });
       try {
         transactions.push(await accounts[1].sendTransaction(txRequest));
-      } catch {}
+      } catch { }
       return transactions;
     };
     const mintALCA = async () => {
@@ -1565,7 +1566,7 @@ task(
           case 0:
             try {
               await deployContract();
-            } catch (error) {}
+            } catch (error) { }
             break;
           case 1:
             try {
@@ -1573,18 +1574,18 @@ task(
               txSet.push(...tx);
               // nonce0++;
               // nonce1++;
-            } catch (error) {}
+            } catch (error) { }
             break;
           case 2:
             try {
               const tx = await mintALCA();
               txSet.push(tx);
-            } catch (error) {}
+            } catch (error) { }
             break;
           case 3:
             try {
               await gasBomb();
-            } catch (error) {}
+            } catch (error) { }
             break;
           default:
             break;
@@ -1680,12 +1681,12 @@ task(
       if (taskArgs.enableAutoMine) {
         try {
           await hre.network.provider.send("evm_setAutomine", [true]);
-        } catch (error) {}
+        } catch (error) { }
       } else {
         try {
           await hre.network.provider.send("evm_setIntervalMining", [interval]);
           await hre.network.provider.send("evm_setAutomine", [false]);
-        } catch (error) {}
+        } catch (error) { }
       }
     }
   });
@@ -1703,7 +1704,7 @@ task(
         await hre.network.provider.send("hardhat_setNextBlockBaseFeePerGas", [
           "0x" + baseFee.toString(16),
         ]);
-      } catch (error) {}
+      } catch (error) { }
     }
   });
 
@@ -1873,11 +1874,10 @@ task(
     // encode approval call to approve public staking contract to
     // encode ALCA amount in wei
     const alcaAmount = hre.ethers.utils.parseEther(taskArgs.alcaAmount);
-    let promptMessage = `approve publicStaking ${
-      publicStaking.address
-    } to spend  ${alcaAmount.toString()} in wei ALCA ? ${hre.ethers.utils.parseEther(
-      alcaAmount.toString()
-    )}(y/n)\n`;
+    let promptMessage = `approve publicStaking ${publicStaking.address
+      } to spend  ${alcaAmount.toString()} in wei ALCA ? ${hre.ethers.utils.parseEther(
+        alcaAmount.toString()
+      )}(y/n)\n`;
     await promptCheckDeploymentArgs(promptMessage);
     const approval = alca.interface.encodeFunctionData("approve", [
       publicStaking.address,
@@ -1894,11 +1894,10 @@ task(
       alcaAmount,
       maxStakingLock,
     ]);
-    promptMessage = `create a staked position for ${
-      taskArgs.recipient
-    } with ${alcaAmount} in wei ${hre.ethers.utils.parseEther(
-      alcaAmount.toString()
-    )} ALCA locked for ${maxStakingLock} blocks? (y/n)\n`;
+    promptMessage = `create a staked position for ${taskArgs.recipient
+      } with ${alcaAmount} in wei ${hre.ethers.utils.parseEther(
+        alcaAmount.toString()
+      )} ALCA locked for ${maxStakingLock} blocks? (y/n)\n`;
     await promptCheckDeploymentArgs(promptMessage);
     const encodedMintToCall: MultiCallArgsStruct = {
       target: publicStaking.address,
@@ -1938,6 +1937,7 @@ task(
 )
   .addParam("csvPath", "path to csv file")
   .addFlag("test", "test mode for use with a hardhat fork mode")
+  .addFlag("skipChecks", "skips prompt checks")
   .addOptionalParam(
     "factoryAddress",
     "address of AliceNetFactory",
@@ -1956,6 +1956,9 @@ task(
     types.int
   )
   .setAction(async (taskArgs, hre) => {
+    if (taskArgs.skipchecks === true) {
+      silencePrompts();
+    }
     const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
       taskArgs.waitConfirmation,
       hre
@@ -2033,9 +2036,8 @@ task(
       };
       encodedMultiCallArgs.push(encodedMintToCall);
     }
-    let promptMessage = `approve publicStaking ${
-      publicStaking.address
-    } to spend  ${approvalAmount.toString()} ALCA? (y/n)\n`;
+    let promptMessage = `approve publicStaking ${publicStaking.address
+      } to spend  ${approvalAmount.toString()} ALCA? (y/n)\n`;
     await promptCheckDeploymentArgs(promptMessage);
     const approval = alca.interface.encodeFunctionData("approve", [
       publicStaking.address,
