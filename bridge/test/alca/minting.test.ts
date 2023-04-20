@@ -1,7 +1,13 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
-import { expect, factoryCallAnyFixture, Fixture, getFixture } from "../setup";
+import {
+  expect,
+  factoryCallAnyFixture,
+  factoryCallAnyTX,
+  Fixture,
+  getFixture,
+} from "../setup";
 import { getState, init, state } from "./setup";
 describe("Testing ALCA", async () => {
   let user: SignerWithAddress;
@@ -39,7 +45,57 @@ describe("Testing ALCA", async () => {
             .withArgs(admin.address, fixture.alcaMinter.address);
         });
       });
+      describe("supply cap tests", async () => {
+        it("should mint 1 billion tokens", async function () {
+          await factoryCallAnyFixture(fixture, "alcaMinter", "mint", [
+            user.address,
+            1000000000n,
+          ]);
+          expectedState.Balances.alca.user += 1000000000n;
+          currentState = await getState(fixture);
+          expect(currentState).to.be.deep.eq(expectedState);
+        });
+        it("should mint 1 billion tokens and fail on 1 wei more", async function () {
+          //get the current supply
+          const maxSupply = ethers.utils.parseEther("1000000000");
+          let currentSupply = await fixture.alca.totalSupply();
+          const mintAmount = maxSupply.sub(currentSupply);
+          await factoryCallAnyFixture(fixture, "alcaMinter", "mint", [
+            user.address,
+            mintAmount,
+          ]);
+          currentSupply = await fixture.alca.totalSupply();
+          expect(currentSupply).to.be.eq(maxSupply);
+          const tx = factoryCallAnyTX(
+            fixture.factory,
+            fixture.alcaMinter,
+            "mint",
+            [user.address, 1]
+          );
+          await expect(tx)
+            .to.be.revertedWithCustomError(
+              fixture.alcaMinter,
+              "MintingExceeds1Billion"
+            )
+            .withArgs(currentSupply);
+        });
 
+        it("should not mint more than 1 billion tokens", async function () {
+          const currentSupply = await fixture.alca.totalSupply();
+          const tx = factoryCallAnyTX(
+            fixture.factory,
+            fixture.alcaMinter,
+            "mint",
+            [user.address, ethers.utils.parseEther("1000000001")]
+          );
+          await expect(tx)
+            .to.be.revertedWithCustomError(
+              fixture.alcaMinter,
+              "MintingExceeds1Billion"
+            )
+            .withArgs(currentSupply);
+        });
+      });
       describe("Business methods with onlyFactory modifier", async () => {
         it("Should mint when called by external identified as minter impersonating factory", async function () {
           await factoryCallAnyFixture(fixture, "alcaMinter", "mint", [
