@@ -7,17 +7,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "currentSupply",
-        "type": "uint256"
-      }
-    ],
-    "name": "MintingExceeds1Billion",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "sender",
         "type": "address"
