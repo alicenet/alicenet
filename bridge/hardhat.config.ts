@@ -17,6 +17,7 @@ import os from "os";
 import "solidity-coverage";
 import "./scripts/tasks/alicenetFactoryTasks";
 import "./scripts/tasks/alicenetTasks";
+import "./scripts/tasks/contractUpgradeTasks";
 import "./scripts/tasks/generateImmutableAuth";
 import "./scripts/tasks/gogogen";
 require("dotenv").config();
@@ -119,11 +120,11 @@ const config: HardhatUserConfig = {
     hardhat: {
       chainId: 1337,
       allowUnlimitedContractSize: false,
-      // forking: {
-      //   url: process.env.ALCHEMY_ENDPOINT_ETH
-      //     ? process.env.ALCHEMY_ENDPOINT_ETH
-      //     : "",
-      // },
+      forking: {
+        url: process.env.ALCHEMY_ENDPOINT_ETH
+          ? process.env.ALCHEMY_ENDPOINT_ETH
+          : "",
+      },
       mining: {
         auto: true,
         interval: 0,

@@ -28,4 +28,18 @@ contract ALCAMinter is ImmutableALCA, IStakingTokenMinter {
         }
         IStakingToken(_alcaAddress()).externalMint(to_, amount_);
     }
+
+    /**
+     * @notice gets the max supply of ALCAs
+     */
+    function maxSupply() public pure returns (uint256) {
+        return MAX_SUPPLY;
+    }
+
+    /**
+     * @notice gets the current supply of ALCAs
+     */
+    function totalSupply() public view returns (uint256) {
+        return IERC20(_alcaAddress()).totalSupply();
+    }
 }

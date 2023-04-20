@@ -423,7 +423,8 @@ export async function upgradeProxyTask(
   factory?: AliceNetFactory,
   factoryAddress?: string,
   implementationBase?: ContractFactory,
-  skipInitializer?: boolean
+  skipInitializer?: boolean,
+  test?: boolean
 ) {
   const constructorArgs = Object.values(
     deploymentConfigForContract.constructorArgs
@@ -443,6 +444,10 @@ export async function upgradeProxyTask(
     }
   } else {
     factoryAddress = factory.address;
+  }
+
+  if (test) {
+    factory = await impersonateFactoryOwner(hre, undefined, undefined, factory);
   }
 
   implementationBase =
@@ -479,14 +484,14 @@ export async function upgradeProxyTask(
     `Updating logic for the ${deploymentConfigForContract.name} proxy at ${proxyAddress} to point to implementation at ${implementationAddress}, gasCost: ${receipt.gasUsed}`
   );
   const proxyData: ProxyData = {
-    factoryAddress,
+    factoryAddress: factoryAddress,
     logicName: deploymentConfigForContract.name,
     logicAddress: implementationAddress,
     salt: deploymentConfigForContract.salt,
-    proxyAddress,
+    proxyAddress: proxyAddress,
     gas: receipt.gasUsed.toNumber(),
-    receipt,
-    initCallData,
+    receipt: receipt,
+    initCallData: initCallData,
   };
   return proxyData;
 }
@@ -602,4 +607,29 @@ export async function deployOnlyProxyTask(
     `Deployed ${salt} proxy at ${proxyData.proxyAddress}, gasCost: ${proxyData.gas}`
   );
   return proxyData;
+}
+
+export async function impersonateFactoryOwner(
+  hre: HardhatRuntimeEnvironment,
+  address: string = "0xff55549a3ceea32fba4794bf1a649a2363fcda53",
+  factoryAddress: string = "0x4b6df6b299fb6414f45719e0d9e1889269a7843e",
+  factory?: AliceNetFactory
+) {
+  if (factory === undefined) {
+    factory = await hre.ethers.getContractAt("AliceNetFactory", factoryAddress);
+  }
+  await hre.network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [address],
+  });
+  const signers = await hre.ethers.getSigners();
+  const tx = await signers[0].populateTransaction({
+    to: address,
+    value: hre.ethers.utils.parseEther("2"),
+  });
+  await signers[0].sendTransaction(tx);
+  const helpers = require("@nomicfoundation/hardhat-network-helpers");
+  await helpers.impersonateAccount(address);
+  const signer = await hre.ethers.getSigner(address);
+  return factory.connect(signer);
 }
