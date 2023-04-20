@@ -5,26 +5,26 @@ run:
     - flakes
 linters:
   enable:
-    - asciicheck 
-    - bidichk 
-    - bodyclose 
-    - decorder 
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - decorder
     - errcheck
-    - errchkjson 
-    - execinquery 
-    - exhaustive 
-    - exportloopref 
-    - goprintffuncname 
+    - errchkjson
+    - execinquery
+    - exhaustive
+    - exportloopref
+    - goprintffuncname
     - gosimple
     - govet
-    - grouper 
-    - misspell 
+    - grouper
+    - misspell
     - ineffassign
     - staticcheck
-    - tenv 
-    - thelper 
-    - tparallel 
-    - unused 
+    - tenv
+    - thelper
+    - tparallel
+    - unused
   # Disabling linters until we get them fixed up.
   disable:
     - containedctx # 4 issues
@@ -75,9 +75,9 @@ linters:
     - whitespace # 6 issues
     - wsl # 0 issues
   # Disabled due to generics
-    # - rowserrcheck # 0 issues + warn [linters_context] 
-    # - sqlclosecheck # 0 issues 
-    # - wastedassign # 0 issues 
+  # - rowserrcheck # 0 issues + warn [linters_context]
+  # - sqlclosecheck # 0 issues
+  # - wastedassign # 0 issues
 linters-settings:
   forbidigo:
     forbid:
