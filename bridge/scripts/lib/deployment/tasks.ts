@@ -1,4 +1,5 @@
-import { BigNumber, ContractFactory } from "ethers";
+import { BigNumber, Contract, ContractFactory, ContractReceipt } from "ethers";
+import { EventFragment, LogDescription } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { AliceNetFactory } from "../../../typechain-types";
@@ -478,7 +479,7 @@ export async function upgradeProxyTask(
     EVENT_DEPLOYED_RAW,
     CONTRACT_ADDR
   );
-  console.log("events", receipt.events);
+  await parseEvents([factory], hre.ethers, receipt);
   const proxyAddress = await factory.lookup(deploymentConfigForContract.salt);
   await showState(
     `Updating logic for the ${deploymentConfigForContract.name} proxy at ${proxyAddress} to point to implementation at ${implementationAddress}, gasCost: ${receipt.gasUsed}`
@@ -495,6 +496,38 @@ export async function upgradeProxyTask(
   };
   return proxyData;
 }
+
+/**
+ * @description processes the events emitted by multiple contracts, and prints in human readable format
+ * @param contracts array of ethers contract objects for contracts emitting events
+ * @param ethers ethers object
+ * @param receipt transaction receipt object
+ * @returns
+ */
+export const parseEvents = async (
+  contracts: Array<Contract>,
+  ethers: Ethers | undefined = undefined,
+  receipt: ContractReceipt
+): Promise<LogDescription[]> => {
+  if (ethers === undefined) {
+    ethers = (await require("hardhat")).ethers as Ethers;
+  }
+  const abi: Array<EventFragment> = [];
+  for (const contract of contracts) {
+    for (const event in contract.interface.events) {
+      abi.push(contract.interface.events[event]);
+    }
+  }
+  const abiInterface = new ethers.utils.Interface(abi);
+  if (receipt.events !== undefined && receipt.events.length > 0) {
+    const events = receipt.events.map((event) => {
+      return abiInterface.parseLog(event);
+    });
+    console.log("events: ", events);
+    return events;
+  }
+  return [];
+};
 
 export async function deployCreateAndRegisterTask(
   deploymentConfigForContract: DeploymentConfig,

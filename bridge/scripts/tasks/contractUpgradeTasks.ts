@@ -28,7 +28,7 @@ task(
   )
   .addOptionalParam("waitConfirmation", "Wait for confirmation of transaction")
   .addFlag("skipInitializer", "Skip initializer")
-  .addFlag("test", "Test mode")
+  .addFlag("test", "Test mode ONLY USE WITH HARDHAT FORKED NETWORK")
   .setAction(async (taskArgs, hre) => {
     const deploymentConfigForContract: DeploymentConfig =
       await extractFullContractInfoByContractName(
@@ -54,6 +54,9 @@ task(
       "ALCA minter proxy upgraded to new logic contract: ",
       proxyData.logicAddress
     );
+
+    ////////////ONLY USE WITH HARDHAT FORKED NETWORK////////////
+    /// for verifying contract upgrade
     if (taskArgs.test === true) {
       //run post deployment test
       const factory = await impersonateFactoryOwner(
@@ -92,6 +95,7 @@ task(
         await factory.signer.getAddress(),
         1,
       ]);
+      console.log("minted max supply:", currentSupply.toString());
       multicallArgs = encodeMultiCallArgs(alcaMinter.address, 0, callData);
       //send the mutlticall to the factory
       tx = factory.multiCall([multicallArgs]);
