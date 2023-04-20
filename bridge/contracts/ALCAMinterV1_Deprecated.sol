@@ -4,14 +4,11 @@ pragma solidity ^0.8.16;
 import "contracts/interfaces/IStakingToken.sol";
 import "contracts/utils/auth/ImmutableFactory.sol";
 import "contracts/utils/auth/ImmutableALCA.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+//deprecated
 /// @custom:salt ALCAMinter
 /// @custom:deploy-type deployUpgradeable
-contract ALCAMinter is ImmutableALCA, IStakingTokenMinter {
-    error MintingExceeds1Billion(uint256 currentSupply);
-    uint256 constant MAX_SUPPLY = 1_000_000_000 * 10 ** 18;
-
+contract ALCAMinterV1 is ImmutableALCA, IStakingTokenMinter {
     constructor() ImmutableFactory(msg.sender) ImmutableALCA() IStakingTokenMinter() {}
 
     /**
@@ -20,12 +17,6 @@ contract ALCAMinter is ImmutableALCA, IStakingTokenMinter {
      * @param amount_ The amount of ALCAs to be minted
      * */
     function mint(address to_, uint256 amount_) public onlyFactory {
-        // calls the alca for current supply
-        uint256 currentSupply = IERC20(_alcaAddress()).totalSupply();
-        // revert if the current supply plus the amount to mint is greater than 1 billion
-        if (currentSupply + amount_ > MAX_SUPPLY) {
-            revert MintingExceeds1Billion(currentSupply);
-        }
         IStakingToken(_alcaAddress()).externalMint(to_, amount_);
     }
 }
