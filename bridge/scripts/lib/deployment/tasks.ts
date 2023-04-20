@@ -485,14 +485,14 @@ export async function upgradeProxyTask(
     `Updating logic for the ${deploymentConfigForContract.name} proxy at ${proxyAddress} to point to implementation at ${implementationAddress}, gasCost: ${receipt.gasUsed}`
   );
   const proxyData: ProxyData = {
-    factoryAddress: factoryAddress,
+    factoryAddress,
     logicName: deploymentConfigForContract.name,
     logicAddress: implementationAddress,
     salt: deploymentConfigForContract.salt,
-    proxyAddress: proxyAddress,
+    proxyAddress,
     gas: receipt.gasUsed.toNumber(),
-    receipt: receipt,
-    initCallData: initCallData,
+    receipt,
+    initCallData,
   };
   return proxyData;
 }

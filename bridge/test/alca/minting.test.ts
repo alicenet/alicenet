@@ -56,7 +56,7 @@ describe("Testing ALCA", async () => {
           expect(currentState).to.be.deep.eq(expectedState);
         });
         it("should mint 1 billion tokens and fail on 1 wei more", async function () {
-          //get the current supply
+          // get the current supply
           const maxSupply = ethers.utils.parseEther("1000000000");
           let currentSupply = await fixture.alca.totalSupply();
           const mintAmount = maxSupply.sub(currentSupply);

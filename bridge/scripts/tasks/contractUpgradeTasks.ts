@@ -55,10 +55,10 @@ task(
       proxyData.logicAddress
     );
 
-    ////////////ONLY USE WITH HARDHAT FORKED NETWORK////////////
+    /// /////////ONLY USE WITH HARDHAT FORKED NETWORK////////////
     /// for verifying contract upgrade
     if (taskArgs.test === true) {
-      //run post deployment test
+      // run post deployment test
       const factory = await impersonateFactoryOwner(
         hre,
         undefined,
@@ -71,7 +71,7 @@ task(
       // get the current supply
       let currentSupply = await alcaMinter.totalSupply();
       console.log("current supply:", currentSupply.toString());
-      //check if able to mint alca up to 1 billion max supply
+      // check if able to mint alca up to 1 billion max supply
       const mintAmount = hre.ethers.utils
         .parseEther("1000000000")
         .sub(currentSupply);
@@ -83,7 +83,7 @@ task(
       console.log("encoded mint function data:", callData);
       console.log("encoding multicall args");
       let multicallArgs = encodeMultiCallArgs(alcaMinter.address, 0, callData);
-      //send the mutlticall to the factory
+      // send the mutlticall to the factory
       console.log("sending multicall to factory");
       let tx = factory.multiCall([multicallArgs]);
       await (await tx).wait();
@@ -97,9 +97,9 @@ task(
       ]);
       console.log("minted max supply:", currentSupply.toString());
       multicallArgs = encodeMultiCallArgs(alcaMinter.address, 0, callData);
-      //send the mutlticall to the factory
+      // send the mutlticall to the factory
       tx = factory.multiCall([multicallArgs]);
-      //check if revert when minting more than 1 billion
+      // check if revert when minting more than 1 billion
       await hre
         .expect(tx)
         .to.be.revertedWithCustomError(alcaMinter, "MintingExceeds1Billion")
@@ -123,9 +123,9 @@ task(
       taskArgs.alcaMinter
     );
     // get the current supply
-    let currentSupply = await alcaMinter.callStatic.totalSupply();
+    const currentSupply = await alcaMinter.callStatic.totalSupply();
     console.log("current supply:", currentSupply.toString());
-    //get the max supply
-    let maxSupply = await alcaMinter.callStatic.maxSupply();
+    // get the max supply
+    const maxSupply = await alcaMinter.callStatic.maxSupply();
     console.log("max supply:", maxSupply.toString());
   });
