@@ -120,11 +120,11 @@ const config: HardhatUserConfig = {
     hardhat: {
       chainId: 1337,
       allowUnlimitedContractSize: false,
-      forking: {
-        url: process.env.ALCHEMY_ENDPOINT_ETH
-          ? process.env.ALCHEMY_ENDPOINT_ETH
-          : "",
-      },
+      // forking: {
+      //   url: process.env.ALCHEMY_ENDPOINT_ETH
+      //     ? process.env.ALCHEMY_ENDPOINT_ETH
+      //     : "",
+      // },
       mining: {
         auto: true,
         interval: 0,
