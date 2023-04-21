@@ -581,6 +581,18 @@ export async function factoryCallAnyFixture(
   return await factoryCallAny(factory, contract, functionName, args);
 }
 
+export const factoryCallAnyTX = async (
+  factory: AliceNetFactory,
+  contract: Contract,
+  functionName: string,
+  args?: Array<any>
+): Promise<ContractTransaction> => {
+  if (args === undefined) {
+    args = [];
+  }
+  const callData = contract.interface.encodeFunctionData(functionName, args);
+  return await factory.callAny(contract.address, 0, callData);
+};
 export async function factoryCallAny(
   factory: AliceNetFactory,
   contract: Contract,

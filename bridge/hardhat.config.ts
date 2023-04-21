@@ -17,6 +17,7 @@ import os from "os";
 import "solidity-coverage";
 import "./scripts/tasks/alicenetFactoryTasks";
 import "./scripts/tasks/alicenetTasks";
+import "./scripts/tasks/contractUpgradeTasks";
 import "./scripts/tasks/generateImmutableAuth";
 import "./scripts/tasks/gogogen";
 require("dotenv").config();
