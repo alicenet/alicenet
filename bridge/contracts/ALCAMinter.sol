@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @custom:deploy-type deployUpgradeable
 contract ALCAMinter is ImmutableALCA, IStakingTokenMinter {
     error MintingExceeds1Billion(uint256 currentSupply);
-    uint256 constant MAX_SUPPLY = 1_000_000_000 * 10 ** 18;
+    uint256 public constant MAX_SUPPLY = 1_000_000_000 * 10 ** 18;
 
     constructor() ImmutableFactory(msg.sender) ImmutableALCA() IStakingTokenMinter() {}
 
@@ -27,13 +27,6 @@ contract ALCAMinter is ImmutableALCA, IStakingTokenMinter {
             revert MintingExceeds1Billion(currentSupply);
         }
         IStakingToken(_alcaAddress()).externalMint(to_, amount_);
-    }
-
-    /**
-     * @notice gets the max supply of ALCAs
-     */
-    function maxSupply() public pure returns (uint256) {
-        return MAX_SUPPLY;
     }
 
     /**

@@ -126,6 +126,6 @@ task(
     const currentSupply = await alcaMinter.callStatic.totalSupply();
     console.log("current supply:", currentSupply.toString());
     // get the max supply
-    const maxSupply = await alcaMinter.callStatic.maxSupply();
+    const maxSupply = await alcaMinter.callStatic.MAX_SUPPLY();
     console.log("max supply:", maxSupply.toString());
   });
