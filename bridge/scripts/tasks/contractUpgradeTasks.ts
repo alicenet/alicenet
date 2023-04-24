@@ -52,7 +52,10 @@ task(
     );
     console.log(
       "ALCA minter proxy upgraded to new logic contract: ",
-      proxyData.logicAddress
+      proxyData.logicAddress,
+      "for",
+      proxyData.gas,
+      "gas unit"
     );
 
     /// /////////ONLY USE WITH HARDHAT FORKED NETWORK////////////
