@@ -49,13 +49,13 @@ task(
       madToken = madToken.connect(signer);
     }
 
-    //get the balance of alicenent deployer
+    // get the balance of alicenent deployer
     console.log(await madToken.signer.getAddress());
     const balance = await madToken.balanceOf(
       await madToken.signer.getAddress()
     );
 
-    //send the balance to alca
+    // send the balance to alca
     if (taskArgs.alcbAddress === hre.ethers.constants.AddressZero) {
       throw new Error("ALCB address cannot be zero address");
     }
@@ -76,7 +76,7 @@ task(
       balance,
       await getGasPrices(hre.ethers)
     );
-    const receipt = await tx.wait();
+    const receipt = await tx.wait(waitConfirmationsBlocks);
     const currentALCABalance = await madToken.balanceOf(taskArgs.alcaAddress);
     expect(currentALCABalance).to.equal(originalALCABalance.add(balance));
     await parseEvents([madToken], hre.ethers, receipt);
