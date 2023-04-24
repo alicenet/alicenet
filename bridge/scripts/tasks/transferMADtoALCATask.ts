@@ -212,9 +212,16 @@ task(
     if (taskArgs.alcbAddress === hre.ethers.constants.AddressZero) {
       throw new Error("ALCB address cannot be zero address");
     }
+    const gas = await madToken.estimateGas.transfer(
+      taskArgs.alcaAddress,
+      balance,
+      await getGasPrices(hre.ethers)
+    );
     const promptMessage = `Do you want to send ${hre.ethers.utils.formatEther(
       balance
-    )} Madtoken to the address ${taskArgs.alcaAddress} ? (y/n)\n`;
+    )} Madtoken to the address ${
+      taskArgs.alcaAddress
+    } for ${gas.toString()} units ? (y/n)\n`;
     await promptCheckDeploymentArgs(promptMessage);
     const originalALCABalance = await madToken.balanceOf(taskArgs.alcaAddress);
     const tx = await madToken.transfer(
