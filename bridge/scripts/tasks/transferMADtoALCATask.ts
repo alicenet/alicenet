@@ -206,7 +206,9 @@ task(
     }
 
     //get the balance of alicenent deployer
-    const balance = await madToken.balanceOf(madToken.signer.getAddress());
+    const balance = await madToken.balanceOf(
+      await madToken.signer.getAddress()
+    );
 
     //send the balance to alca
     if (taskArgs.alcbAddress === hre.ethers.constants.AddressZero) {
