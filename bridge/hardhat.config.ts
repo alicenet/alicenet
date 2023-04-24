@@ -20,6 +20,7 @@ import "./scripts/tasks/alicenetTasks";
 import "./scripts/tasks/contractUpgradeTasks";
 import "./scripts/tasks/generateImmutableAuth";
 import "./scripts/tasks/gogogen";
+import "./scripts/tasks/transferMADtoALCATask";
 require("dotenv").config();
 
 function getRemappings() {
@@ -120,11 +121,11 @@ const config: HardhatUserConfig = {
     hardhat: {
       chainId: 1337,
       allowUnlimitedContractSize: false,
-      // forking: {
-      //   url: process.env.ALCHEMY_ENDPOINT_ETH
-      //     ? process.env.ALCHEMY_ENDPOINT_ETH
-      //     : "",
-      // },
+      forking: {
+        url: process.env.ALCHEMY_ENDPOINT_ETH
+          ? process.env.ALCHEMY_ENDPOINT_ETH
+          : "",
+      },
       mining: {
         auto: true,
         interval: 0,
