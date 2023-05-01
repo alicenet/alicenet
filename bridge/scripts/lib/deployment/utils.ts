@@ -543,3 +543,7 @@ export function calculateSalt(
           )
       );
 }
+
+export async function silencePrompts() {
+  process.env.silencer = "true";
+}

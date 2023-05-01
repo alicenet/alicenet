@@ -1800,7 +1800,7 @@ contract("StakingNFT", async () => {
 
       // Deposit Token
       const magic = BigNumber.from("42");
-      const tokenString = "1234567890";
+      const tokenString = "123456789";
       const tokenScale = "1000000000000000000"; // 10**18
       const depositedToken = BigNumber.from(tokenString).mul(
         BigNumber.from(tokenScale)
@@ -1891,7 +1891,7 @@ contract("StakingNFT", async () => {
 
       // Deposit Token
       const magic = BigNumber.from("42");
-      const tokenString = "1234567890";
+      const tokenString = "123456789";
       const tokenScale = "1000000000000000000"; // 10**18
       const depositedToken = BigNumber.from(tokenString).mul(
         BigNumber.from(tokenScale)
@@ -1994,7 +1994,7 @@ contract("StakingNFT", async () => {
 
       // Deposit Token
       const magic = BigNumber.from("42");
-      const tokenString = "1234567890";
+      const tokenString = "123456789";
       const tokenScale = "1000000000000000000"; // 10**18
       const depositedToken = BigNumber.from(tokenString).mul(
         BigNumber.from(tokenScale)
@@ -2088,7 +2088,7 @@ contract("StakingNFT", async () => {
 
       // Deposit Token
       const magic = BigNumber.from("42");
-      const tokenString = "1234567890";
+      const tokenString = "123456789";
       const tokenScale = "1000000000000000000"; // 10**18
       const depositedToken = BigNumber.from(tokenString).mul(
         BigNumber.from(tokenScale)
@@ -3354,7 +3354,7 @@ contract("StakingNFT", async () => {
       const scaleFactor = await stakingNFT.getAccumulatorScaleFactor();
       // Deposit Token
       const magic = BigNumber.from("42");
-      const tokenString = "1234567890";
+      const tokenString = "123456789";
       const tokenScale = "1000000000000000000"; // 10**18
       const depositedToken = BigNumber.from(tokenString).mul(
         BigNumber.from(tokenScale)
@@ -3414,7 +3414,7 @@ contract("StakingNFT", async () => {
       // Deposit Token
       const scaleFactor = await stakingNFT.getAccumulatorScaleFactor();
       const magic = BigNumber.from("42");
-      const tokenString = "1234567890";
+      const tokenString = "123456789";
       const tokenScale = "1000000000000000000"; // 10**18
       const depositedToken = BigNumber.from(tokenString).mul(
         BigNumber.from(tokenScale)
@@ -3491,7 +3491,7 @@ contract("StakingNFT", async () => {
       // deposit Token to be distributed
       const scaleFactor = await stakingNFT.getAccumulatorScaleFactor();
       const magic = BigNumber.from("42");
-      const tokenString = "1234567890";
+      const tokenString = "123456789";
       const tokenScale = "1000000000000000000"; // 10**18
       const depositedToken = BigNumber.from(tokenString).mul(
         BigNumber.from(tokenScale)

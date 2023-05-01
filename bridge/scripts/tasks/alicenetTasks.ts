@@ -28,6 +28,7 @@ import {
   parseWaitConfirmationInterval,
   promptCheckDeploymentArgs,
   readDeploymentConfig,
+  silencePrompts,
   writeDeploymentConfig,
 } from "../lib/deployment/utils";
 
@@ -1938,6 +1939,7 @@ task(
 )
   .addParam("csvPath", "path to csv file")
   .addFlag("test", "test mode for use with a hardhat fork mode")
+  .addFlag("skipChecks", "skips prompt checks")
   .addOptionalParam(
     "factoryAddress",
     "address of AliceNetFactory",
@@ -1956,6 +1958,9 @@ task(
     types.int
   )
   .setAction(async (taskArgs, hre) => {
+    if (taskArgs.skipchecks === true) {
+      await silencePrompts();
+    }
     const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
       taskArgs.waitConfirmation,
       hre

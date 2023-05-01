@@ -1,4 +1,5 @@
-import { BigNumber, ContractFactory } from "ethers";
+import { BigNumber, Contract, ContractFactory, ContractReceipt } from "ethers";
+import { EventFragment, LogDescription } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { AliceNetFactory } from "../../../typechain-types";
@@ -423,7 +424,8 @@ export async function upgradeProxyTask(
   factory?: AliceNetFactory,
   factoryAddress?: string,
   implementationBase?: ContractFactory,
-  skipInitializer?: boolean
+  skipInitializer?: boolean,
+  test?: boolean
 ) {
   const constructorArgs = Object.values(
     deploymentConfigForContract.constructorArgs
@@ -443,6 +445,10 @@ export async function upgradeProxyTask(
     }
   } else {
     factoryAddress = factory.address;
+  }
+
+  if (test) {
+    factory = await impersonateFactoryOwner(hre, undefined, undefined, factory);
   }
 
   implementationBase =
@@ -473,7 +479,7 @@ export async function upgradeProxyTask(
     EVENT_DEPLOYED_RAW,
     CONTRACT_ADDR
   );
-  console.log("events", receipt.events);
+  await parseEvents([factory], hre.ethers, receipt);
   const proxyAddress = await factory.lookup(deploymentConfigForContract.salt);
   await showState(
     `Updating logic for the ${deploymentConfigForContract.name} proxy at ${proxyAddress} to point to implementation at ${implementationAddress}, gasCost: ${receipt.gasUsed}`
@@ -490,6 +496,38 @@ export async function upgradeProxyTask(
   };
   return proxyData;
 }
+
+/**
+ * @description processes the events emitted by multiple contracts, and prints in human readable format
+ * @param contracts array of ethers contract objects for contracts emitting events
+ * @param ethers ethers object
+ * @param receipt transaction receipt object
+ * @returns
+ */
+export const parseEvents = async (
+  contracts: Array<Contract>,
+  ethers: Ethers | undefined = undefined,
+  receipt: ContractReceipt
+): Promise<LogDescription[]> => {
+  if (ethers === undefined) {
+    ethers = (await require("hardhat")).ethers as Ethers;
+  }
+  const abi: Array<EventFragment> = [];
+  for (const contract of contracts) {
+    for (const event in contract.interface.events) {
+      abi.push(contract.interface.events[event]);
+    }
+  }
+  const abiInterface = new ethers.utils.Interface(abi);
+  if (receipt.events !== undefined && receipt.events.length > 0) {
+    const events = receipt.events.map((event) => {
+      return abiInterface.parseLog(event);
+    });
+    console.log("events: ", events);
+    return events;
+  }
+  return [];
+};
 
 export async function deployCreateAndRegisterTask(
   deploymentConfigForContract: DeploymentConfig,
@@ -602,4 +640,29 @@ export async function deployOnlyProxyTask(
     `Deployed ${salt} proxy at ${proxyData.proxyAddress}, gasCost: ${proxyData.gas}`
   );
   return proxyData;
+}
+
+export async function impersonateFactoryOwner(
+  hre: HardhatRuntimeEnvironment,
+  address: string = "0xff55549a3ceea32fba4794bf1a649a2363fcda53",
+  factoryAddress: string = "0x4b6df6b299fb6414f45719e0d9e1889269a7843e",
+  factory?: AliceNetFactory
+) {
+  if (factory === undefined) {
+    factory = await hre.ethers.getContractAt("AliceNetFactory", factoryAddress);
+  }
+  await hre.network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [address],
+  });
+  const signers = await hre.ethers.getSigners();
+  const tx = await signers[0].populateTransaction({
+    to: address,
+    value: hre.ethers.utils.parseEther("2"),
+  });
+  await signers[0].sendTransaction(tx);
+  const helpers = require("@nomicfoundation/hardhat-network-helpers");
+  await helpers.impersonateAccount(address);
+  const signer = await hre.ethers.getSigner(address);
+  return factory.connect(signer);
 }
