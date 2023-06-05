@@ -224,7 +224,7 @@ task(
         params: [address],
       });
       const signers = await hre.ethers.getSigners();
-      signers[0].sendTransaction({
+      await signers[0].sendTransaction({
         to: address,
         value: hre.ethers.utils.parseEther("10"),
       });
