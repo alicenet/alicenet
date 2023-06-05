@@ -193,7 +193,6 @@ task(
       taskArgs.waitConfirmation,
       hre
     );
-    console.log(taskArgs.madTokenAddress);
     // santize inputs
     if (
       taskArgs.alcaAddress === hre.ethers.constants.AddressZero ||
@@ -247,10 +246,6 @@ task(
       await getGasPrices(hre.ethers)
     );
     const alcaInitialMadTokenBalance = await madToken.balanceOf(alca.address);
-    console.log(
-      "alca initial mad balance",
-      hre.ethers.utils.formatEther(alcaInitialMadTokenBalance)
-    );
     const factoryInitialALCA = await alca.balanceOf(taskArgs.factoryAddress);
     const gas = await alca.estimateGas.migrateTo(
       taskArgs.factoryAddress,
@@ -273,6 +268,10 @@ task(
     console.log("receipt:", receipt);
     const factoryEndingBalance = await alca.balanceOf(taskArgs.factoryAddress);
     const alcaMadTokenEndingBalance = await madToken.balanceOf(alca.address);
+    console.log(
+      "alca initial mad balance",
+      hre.ethers.utils.formatEther(alcaInitialMadTokenBalance)
+    );
     console.log(
       `alicenet deployer ${await madToken.signer.getAddress()} initial balance: ${hre.ethers.utils.formatEther(
         balance
