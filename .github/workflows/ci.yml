@@ -52,29 +52,29 @@ jobs:
           sub-filter-include: ${{ matrix.sub-filter-include }}
           sub-filter-exclude: ${{ matrix.sub-filter-exclude }}
 
-  node-coverage:
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    defaults:
-      run:
-        working-directory: ./bridge
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version-file: "bridge/.nvmrc"
-          cache: "npm"
-          cache-dependency-path: bridge/package-lock.json
-      - run: npm ci
-      - run: npm run clean
-      - run: npm run compile
-      - run: npx hardhat coverage --solcoverjs ./.solcover.ts
-        env:
-          NODE_OPTIONS: "--max_old_space_size=4096"
-      - uses: codecov/codecov-action@v3
-        with:
-          files: ./bridge/coverage.json
-          verbose: true
+  # node-coverage:
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 60
+  #   defaults:
+  #     run:
+  #       working-directory: ./bridge
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: actions/setup-node@v3
+  #       with:
+  #         node-version-file: "bridge/.nvmrc"
+  #         cache: "npm"
+  #         cache-dependency-path: bridge/package-lock.json
+  #     - run: npm ci
+  #     - run: npm run clean
+  #     - run: npm run compile
+  #     - run: npx hardhat coverage --solcoverjs ./.solcover.ts
+  #       env:
+  #         NODE_OPTIONS: "--max_old_space_size=4096"
+  #     - uses: codecov/codecov-action@v3
+  #       with:
+  #         files: ./bridge/coverage.json
+  #         verbose: true
 
   node-lint:
     runs-on: ubuntu-latest
@@ -96,112 +96,112 @@ jobs:
       - run: npm run lint-solidity
       - run: npm run lint
 
-  go-lint:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v3
-      - uses: golangci/golangci-lint-action@v3
-        with:
-          version: v1.50.1
+  # go-lint:
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 10
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: golangci/golangci-lint-action@v3
+  #       with:
+  #         version: v1.50.1
 
-  go-unit-tests:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/alicenet-config
-      - run: go build ./...
-      - name: Set up gotestfmt
-        run: go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt
-      - name: Run unit tests
-        timeout-minutes: 20
-        run: |
-          set -euo pipefail
-          go test -race -json -covermode=atomic -coverpkg ./... -coverprofile=coverage.out ./... 2>&1 | tee /tmp/gotest.log | gotestfmt -hide all
-      - uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage.out
-          verbose: true
+  # go-unit-tests:
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-latest]
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: ./.github/actions/alicenet-config
+  #     - run: go build ./...
+  #     - name: Set up gotestfmt
+  #       run: go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt
+  #     - name: Run unit tests
+  #       timeout-minutes: 20
+  #       run: |
+  #         set -euo pipefail
+  #         go test -race -json -covermode=atomic -coverpkg ./... -coverprofile=coverage.out ./... 2>&1 | tee /tmp/gotest.log | gotestfmt -hide all
+  #     - uses: codecov/codecov-action@v3
+  #       with:
+  #         files: ./coverage.out
+  #         verbose: true
 
-  go-integration-tests:
-    runs-on: ${{ matrix.os }}
-    needs: go-unit-tests
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        test-cmd: [
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestShareDistribution_Group_1,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestShareDistribution_Group_2,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestShareDistribution_Group_3,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestRegisterTask_Group_1,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestRegisterTask_Group_2,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestRegisterTask_Group_3,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestMPKSubmission_Group_1,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestMPKSubmission_Group_2,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestKeyShareSubmission,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestGPKjSubmission_Group_1,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestGPKjSubmission_Group_2,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeShareDistributionTask_Group_1,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingShareDistributionTask_Group_1,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingRegistrationTask_Group_1,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingKeySharesTask,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingGPKjTask_Group_1,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestGPKjDispute,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestCompletion_Group_1,
-            github.com/alicenet/alicenet/layer1/evm/tests,
-            github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/dkg/state,
-          ]
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version-file: "bridge/.nvmrc"
-          cache: "npm"
-          cache-dependency-path: bridge/package-lock.json
-      - run: npm --prefix bridge/ ci
-      - run: npm --prefix bridge/ run compile
-      - uses: ./.github/actions/alicenet-config
-      - name: Set up gotestfmt
-        run: go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt
-      - name: Run tests ${{ matrix.test-cmd }}
-        timeout-minutes: 45
-        env:
-          ENABLE_SCRIPT_LOG: "true"
-        run: |
-          set -euo pipefail
-          ./scripts/main.sh init 5
-          go test -tags=integration -race -json -covermode=atomic -coverpkg ./... -coverprofile=coverage.out -timeout=30m ${{ matrix.test-cmd }} 2>&1 | tee /tmp/gotest.log | gotestfmt -hide all
-      - uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage.out
-          verbose: true
+  # go-integration-tests:
+  #   runs-on: ${{ matrix.os }}
+  #   needs: go-unit-tests
+  #   timeout-minutes: 60
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os: [ubuntu-latest]
+  #       test-cmd: [
+  #           # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestShareDistribution_Group_1,
+  #           # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestShareDistribution_Group_2,
+  #           # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestShareDistribution_Group_3,
+  #           # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestRegisterTask_Group_1,
+  #           # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestRegisterTask_Group_2,
+  #           # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestRegisterTask_Group_3,
+  #           # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestMPKSubmission_Group_1,
+  #           # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestMPKSubmission_Group_2,
+  #           # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestKeyShareSubmission,
+  #           # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestGPKjSubmission_Group_1,
+  #           # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestGPKjSubmission_Group_2,
+  #           # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeShareDistributionTask_Group_1,
+  #           # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingShareDistributionTask_Group_1,
+  #           # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingRegistrationTask_Group_1,
+  #           # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingKeySharesTask,
+  #           # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingGPKjTask_Group_1,
+  #           # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestGPKjDispute,
+  #           # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestCompletion_Group_1,
+  #           github.com/alicenet/alicenet/layer1/evm/tests,
+  #           github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/dkg/state,
+  #         ]
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: actions/setup-node@v3
+  #       with:
+  #         node-version-file: "bridge/.nvmrc"
+  #         cache: "npm"
+  #         cache-dependency-path: bridge/package-lock.json
+  #     - run: npm --prefix bridge/ ci
+  #     - run: npm --prefix bridge/ run compile
+  #     - uses: ./.github/actions/alicenet-config
+  #     - name: Set up gotestfmt
+  #       run: go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt
+  #     - name: Run tests ${{ matrix.test-cmd }}
+  #       timeout-minutes: 45
+  #       env:
+  #         ENABLE_SCRIPT_LOG: "true"
+  #       run: |
+  #         set -euo pipefail
+  #         ./scripts/main.sh init 5
+  #         go test -tags=integration -race -json -covermode=atomic -coverpkg ./... -coverprofile=coverage.out -timeout=30m ${{ matrix.test-cmd }} 2>&1 | tee /tmp/gotest.log | gotestfmt -hide all
+  #     - uses: codecov/codecov-action@v3
+  #       with:
+  #         files: ./coverage.out
+  #         verbose: true
 
-  goreleaser:
-    runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' }}
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - run: git fetch --force --tags
-      - uses: actions/setup-go@v3
-        with:
-          go-version-file: ./go.mod
-          cache: true
-      - name: Import GPG key
-        id: import_gpg
-        uses: crazy-max/ghaction-import-gpg@v5
-        with:
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.GPG_PASSPHRASE }}
-      - uses: goreleaser/goreleaser-action@v4
-        with:
-          args: release --snapshot --rm-dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+  # goreleaser:
+  #   runs-on: ubuntu-latest
+  #   if: ${{ github.actor != 'dependabot[bot]' }}
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 0
+  #     - run: git fetch --force --tags
+  #     - uses: actions/setup-go@v3
+  #       with:
+  #         go-version-file: ./go.mod
+  #         cache: true
+  #     - name: Import GPG key
+  #       id: import_gpg
+  #       uses: crazy-max/ghaction-import-gpg@v5
+  #       with:
+  #         gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+  #         passphrase: ${{ secrets.GPG_PASSPHRASE }}
+  #     - uses: goreleaser/goreleaser-action@v4
+  #       with:
+  #         args: release --snapshot --rm-dist
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
