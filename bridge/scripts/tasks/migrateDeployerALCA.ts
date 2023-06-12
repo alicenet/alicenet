@@ -244,6 +244,12 @@ task(
     console.log(signer.address);
     const alcaInitialMadTokenBalance = await madToken.balanceOf(alca.address);
     const factoryInitialALCA = await alca.balanceOf(taskArgs.factoryAddress);
+    let tx = await madToken.increaseApproval(
+      taskArgs.alcaAddress,
+      balance,
+      await getGasPrices(hre.ethers)
+    );
+    await tx.wait(waitConfirmationsBlocks);
     const gas = await alca.estimateGas.migrateTo(
       taskArgs.factoryAddress,
       balance,
@@ -258,12 +264,6 @@ task(
     await promptCheckDeploymentArgs(promptMessage);
     // approve the alca contract to spend the balance
 
-    let tx = await madToken.increaseApproval(
-      taskArgs.alcaAddress,
-      balance,
-      await getGasPrices(hre.ethers)
-    );
-    await tx.wait(waitConfirmationsBlocks);
     tx = await alca.migrateTo(
       taskArgs.factoryAddress,
       balance,
