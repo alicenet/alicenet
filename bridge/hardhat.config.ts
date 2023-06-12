@@ -20,6 +20,7 @@ import "./scripts/tasks/alicenetTasks";
 import "./scripts/tasks/contractUpgradeTasks";
 import "./scripts/tasks/generateImmutableAuth";
 import "./scripts/tasks/gogogen";
+import "./scripts/tasks/migrateDeployerALCA";
 import "./scripts/tasks/transferMADtoALCATask";
 require("dotenv").config();
 
