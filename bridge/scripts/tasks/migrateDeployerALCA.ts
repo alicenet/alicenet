@@ -217,6 +217,7 @@ task(
       taskArgs.madTokenAddress,
       madTokenABI
     );
+    console.log("madToken", madToken.address);
     let signer = (await hre.ethers.getSigners())[0];
     if (taskArgs.test) {
       const address = "0xff55549a3ceea32fba4794bf1a649a2363fcda53";
