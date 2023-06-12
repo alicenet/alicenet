@@ -217,6 +217,7 @@ task(
       taskArgs.madTokenAddress,
       madTokenABI
     );
+    let signer = (await hre.ethers.getSigners())[0];
     if (taskArgs.test) {
       const address = "0xff55549a3ceea32fba4794bf1a649a2363fcda53";
       await hre.network.provider.request({
@@ -230,15 +231,13 @@ task(
       });
       const helpers = require("@nomicfoundation/hardhat-network-helpers");
       await helpers.impersonateAccount(address);
-      const signer = await hre.ethers.getSigner(address);
+      signer = await hre.ethers.getSigner(address);
       madToken = madToken.connect(signer);
       alca = alca.connect(signer);
     }
 
     // get the madtoken  balance of alicenent deployer
-    const balance = await madToken.balanceOf(
-      await madToken.signer.getAddress()
-    );
+    const balance = await madToken.balanceOf(signer.address);
     // approve the alca contract to spend the balance
     let tx = await madToken.increaseApproval(
       taskArgs.alcaAddress,
@@ -273,9 +272,9 @@ task(
       hre.ethers.utils.formatEther(alcaInitialMadTokenBalance)
     );
     console.log(
-      `alicenet deployer ${await madToken.signer.getAddress()} initial balance: ${hre.ethers.utils.formatEther(
-        balance
-      )}`
+      `alicenet deployer ${
+        signer.address
+      } initial balance: ${hre.ethers.utils.formatEther(balance)}`
     );
     console.log(`factory initial balance: ${hre.ethers.utils.formatEther(
       factoryInitialALCA
