@@ -217,8 +217,10 @@ task(
       taskArgs.madTokenAddress,
       madTokenABI
     );
+
     console.log("madToken", madToken.address);
     let signer = (await hre.ethers.getSigners())[0];
+    console.log("signer", signer.address);
     if (taskArgs.test) {
       const address = "0xff55549a3ceea32fba4794bf1a649a2363fcda53";
       await hre.network.provider.request({
@@ -233,12 +235,12 @@ task(
       const helpers = require("@nomicfoundation/hardhat-network-helpers");
       await helpers.impersonateAccount(address);
       signer = await hre.ethers.getSigner(address);
-      madToken = madToken.connect(signer);
-      alca = alca.connect(signer);
     }
-
+    madToken = madToken.connect(signer);
+    alca = alca.connect(signer);
     // get the madtoken  balance of alicenent deployer
     const balance = await madToken.balanceOf(signer.address);
+    console.log("balance", balance.toString());
     console.log(signer.address);
     const alcaInitialMadTokenBalance = await madToken.balanceOf(alca.address);
     const factoryInitialALCA = await alca.balanceOf(taskArgs.factoryAddress);
