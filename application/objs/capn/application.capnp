@@ -169,6 +169,12 @@ struct Tx {
     fee6 @8 :UInt32 = 0;
     fee7 @9 :UInt32 = 0;
     # Fee stores the fee
+
+    type @10 :UInt32 = 0;
+    # Type defines transaction type
+    
+    data @11 :Data = 0x"00";
+    # Data provides associated data necessary for hash computation
 }
 
 ################################################################################
