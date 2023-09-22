@@ -2,7 +2,7 @@
   "name": "bridge",
   "version": "0.1.0",
   "engines": {
-    "node": "^16.0.0"
+    "node": "^18.0.0"
   },
   "scripts": {
     "typechain": "hardhat typechain",

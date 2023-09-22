@@ -3,13 +3,10 @@ pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "contracts/interfaces/IBridgeRouter.sol";
 import "contracts/utils/Admin.sol";
 import "contracts/utils/Mutex.sol";
 import "contracts/utils/MagicEthTransfer.sol";
 import "contracts/utils/EthSafeTransfer.sol";
-import "contracts/utils/auth/ImmutableFactory.sol";
-import "contracts/utils/auth/ImmutableDistribution.sol";
 import "contracts/interfaces/IUtilityToken.sol";
 import "contracts/libraries/errors/UtilityTokenErrors.sol";
 import "contracts/libraries/math/Sigmoid.sol";
@@ -18,23 +15,11 @@ import "contracts/libraries/math/Sigmoid.sol";
 /// @custom:deploy-type deployCreateAndRegister
 /// @custom:deploy-group alcb
 /// @custom:deploy-group-index 0
-contract ALCB is
-    IUtilityToken,
-    ERC20,
-    Mutex,
-    MagicEthTransfer,
-    EthSafeTransfer,
-    Sigmoid,
-    ImmutableFactory,
-    ImmutableDistribution
-{
+contract ALCB is IUtilityToken, ERC20, Mutex, MagicEthTransfer, EthSafeTransfer, Sigmoid {
     using Address for address;
 
     // multiply factor for the selling/minting bonding curve
     uint256 internal constant _MARKET_SPREAD = 4;
-
-    // Address of the central bridge router contract
-    address internal immutable _centralBridgeRouter;
 
     // Balance in ether that is hold in the contract after minting and burning
     uint256 internal _poolBalance;
