@@ -8,6 +8,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import axios from "axios";
 import csv from "csv-parser";
 import { setTimeout } from "timers/promises";
+import { ALCB } from "../../typechain-types";
 import {
   encodeMultiCallArgs,
   MultiCallArgsStruct,
@@ -1427,6 +1428,57 @@ task(
     );
     const rept = await (
       await factory.connect(adminSigner).callAny(snapshots.address, 0, input)
+    ).wait(waitConfirmationsBlocks);
+    if (rept.status !== 1) {
+      throw new Error(`Receipt indicates failure: ${rept}`);
+    }
+  });
+
+task("set-alcb-share-holders", "Set the share holders of the ALCB token")
+  .addParam("factoryAddress", "address of the factory deploying the contract")
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
+  .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmation,
+      hre
+    );
+    const factory = await hre.ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const alcb = await hre.ethers.getContractAt(
+      "ALCB",
+      await factory.callStatic.lookup(
+        hre.ethers.utils.formatBytes32String("ALCB")
+      )
+    );
+    const data: Array<ALCB.ShareHolderStruct> = [
+      // PublicStaking
+      {
+        account: "0xbbe61f43E8713F33c177338b7CD27778b02171bE",
+        percentage: 900,
+        isMagicTransfer: true,
+      },
+      // Foundation
+      {
+        account: "0x9C1108c283cC17c57bEAC637a5bcCB36d1D5FcF8",
+        percentage: 100,
+        isMagicTransfer: false,
+      },
+    ];
+
+    const input = alcb.interface.encodeFunctionData("setShareHolders", [data]);
+
+    console.log(
+      `\nSetting the share holders of the ALCB token to PublicStaking and Foundation`
+    );
+    const rept = await (
+      await factory.callAny(alcb.address, 0, input)
     ).wait(waitConfirmationsBlocks);
     if (rept.status !== 1) {
       throw new Error(`Receipt indicates failure: ${rept}`);

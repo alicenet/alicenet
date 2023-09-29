@@ -2,7 +2,7 @@
   "name": "bridge",
   "version": "0.1.0",
   "engines": {
-    "node": "^16.0.0"
+    "node": "^18.0.0"
   },
   "scripts": {
     "typechain": "hardhat typechain",
@@ -74,7 +74,7 @@
     "web3": "^1.8.1"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.8.1",
-    "@openzeppelin/contracts-upgradeable": "^4.8.1"
+    "@openzeppelin/contracts": "^4.9.3",
+    "@openzeppelin/contracts-upgradeable": "^4.9.3"
   }
 }

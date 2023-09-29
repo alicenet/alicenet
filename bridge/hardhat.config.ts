@@ -119,6 +119,17 @@ const config: HardhatUserConfig = {
           : "0x0000000000000000000000000000000000000000000000000000000000000000",
       ],
     },
+    sepolia: {
+      url: process.env.SEPOLIA_ENDPOINT || "http://127.0.0.1:8545",
+      gas: "auto",
+      gasMultiplier: 2,
+      gasPrice: "auto",
+      accounts: [
+        process.env.SEPOLIA_PK
+          ? process.env.SEPOLIA_PK
+          : "0x0000000000000000000000000000000000000000000000000000000000000000",
+      ],
+    },
     hardhat: {
       chainId: 1337,
       allowUnlimitedContractSize: false,
@@ -227,14 +238,25 @@ const config: HardhatUserConfig = {
     },
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY
-      ? process.env.ETHERSCAN_API_KEY
-      : "0000000000000000000000000000000000",
+    apiKey: {
+      goerli: process.env.ETHERSCAN_API_KEY
+        ? process.env.ETHERSCAN_API_KEY
+        : "0000000000000000000000000000000000",
+      sepolia: process.env.ETHERSCAN_API_KEY
+        ? process.env.ETHERSCAN_API_KEY
+        : "0000000000000000000000000000000000",
+      mainnet: process.env.ETHERSCAN_API_KEY
+        ? process.env.ETHERSCAN_API_KEY
+        : "0000000000000000000000000000000000",
+      polygonMumbai: process.env.MUMBAI_ETHERSCAN_API_KEY
+        ? process.env.MUMBAI_ETHERSCAN_API_KEY
+        : "0000000000000000000000000000000000",
+    },
   },
   solidity: {
     compilers: [
       {
-        version: "0.8.16",
+        version: "0.8.21",
         settings: {
           outputSelection: {
             "*": {
@@ -263,21 +285,6 @@ const config: HardhatUserConfig = {
         },
       },
     ],
-  },
-  preprocess: {
-    eachLine: (hre) => ({
-      transform: (line: string) => {
-        if (line.match(/^\s*import /i)) {
-          for (const [from, to] of getRemappings()) {
-            if (line.includes(from)) {
-              line = line.replace(from, to);
-              break;
-            }
-          }
-        }
-        return line;
-      },
-    }),
   },
   paths: {
     sources: "./contracts",
