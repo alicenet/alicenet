@@ -2253,3 +2253,58 @@ async function factoryLookupAddress(
       throw new Error(`Invalid factory-address ${factory.address}!\n${error}`);
     });
 }
+
+task("turn-off-alca-multiplier", "turn off the ALCA multiplier")
+  .addParam("factoryAddress", "address of the factory deploying the contract")
+  .addFlag("test", "test mode for use with a hardhat fork mode")
+  .setAction(async (taskArgs, hre) => {
+    let waitBlocks = 4;
+    let signer = (await hre.ethers.getSigners())[0];
+    if (taskArgs.test) {
+      waitBlocks = 0;
+      signer = await hre.ethers.getImpersonatedSigner(
+        "0xff55549a3ceEa32FbA4794bf1A649A2363fcda53"
+      );
+    }
+    if (signer.address !== "0xff55549a3ceEa32FbA4794bf1A649A2363fcda53") {
+      throw new Error(
+        `Invalid signer address ${signer.address}, expected 0xff55549a3ceEa32FbA4794bf1A649A2363fcda53`
+      );
+    }
+    const factory = await hre.ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const alca = await hre.ethers.getContractAt(
+      "ALCA",
+      await factory.callStatic.lookup(
+        hre.ethers.utils.formatBytes32String("ALCA")
+      )
+    );
+    const calldata = alca.interface.encodeFunctionData("finishEarlyStage");
+    console.log(
+      "Is ALCA multiplier on?",
+      await alca.callStatic.isEarlyStageMigration()
+    );
+    console.log(
+      "Migrating 1000 MAD before would generate: " +
+        hre.ethers.utils.formatEther(
+          await alca.callStatic.convert(hre.ethers.utils.parseEther("1000"))
+        )
+    );
+    // use the factory to call the A token minter
+    const txResponse = await factory
+      .connect(signer)
+      .callAny(alca.address, 0, calldata);
+    await txResponse.wait(waitBlocks);
+    console.log(
+      "Is ALCA multiplier on?",
+      await alca.callStatic.isEarlyStageMigration()
+    );
+    console.log(
+      "Migrating 1000 MAD after would generate: " +
+        hre.ethers.utils.formatEther(
+          await alca.callStatic.convert(hre.ethers.utils.parseEther("1000"))
+        )
+    );
+  });
