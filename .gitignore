@@ -1,0 +1,63 @@
+# dependencies
+***/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# logs
+***/log/*
+
+# build & dist
+**/build
+**/dist/*
+**/tsconfig.tsbuildinfo
+**/.rollup.cache
+
+# misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+***/.env
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# lint
+.eslintcache
+
+*.crt
+*.key
+typechain-types
+
+## Docker secrets
+docker/nginx/secrets/*
+!docker/nginx/secrets/.gitkeep
+
+## Metrics Docker
+metrics_docker/grafana-setup/datasources.json
+metrics_docker/prometheus-data/web.yaml
+
+artifacts
+cache
+log
+cache.json
+.env
+
+.idea
+
+# VSCode
+.vscode
+.history
+
+# TypeChain
+typechain
+*.log
+**/coverage/*
+coverage.json
+*.keystore
+*.password
