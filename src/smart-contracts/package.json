@@ -31,7 +31,7 @@
     "@types/mocha": "^10.0.3",
     "@typescript-eslint/eslint-plugin": "^6.9.0",
     "@typescript-eslint/parser": "^6.9.0",
-    "axios": ">=1.6.1",
+    "axios": ">=1.8.2",
     "cdk-validium-contracts": "github:alicenet/zkevm-contracts.git",
     "chai": "^4.3.10",
     "chai-as-promised": "^7.1.1",
