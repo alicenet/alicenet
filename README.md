@@ -15,7 +15,7 @@ to deliver a secure, scalable, and low-cost blockchain solution.
 We note that the Agglayer zkEVM is a continuation of the Polygon zkEVM.
 
 To learn more, check out our official [website](https://app.alice.net/)
-and join our official [Discord community](https://discord.gg/pzwmAbVr).
+and join our official [Discord community](https://discord.gg/RQ3yQ5hwYz).
 
 ## Key Features
 
