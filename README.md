@@ -1,7 +1,6 @@
-# AliceNet 2.0
+![CI](https://github.com/valence-eng/alicenet-public-draft/actions/workflows/ci.yml/badge.svg?branch=main)
 
-<!-- ![GitHub Repo stars](https://img.shields.io/github/stars/alicenet/alicenet?style=social) -->
-<!-- [![Discord](https://img.shields.io/badge/Discord-7289DA?logo=discord&logoColor=white)](https://discord.gg/8esBWyr8h3) -->
+# AliceNet 2.0
 
 AliceNet 2.0 is a cutting-edge blockchain built using the
 [**Agglayer Chain Development Kit (CDK)**](https://docs.agglayer.dev/cdk/).
@@ -77,7 +76,7 @@ The Emergency Consul role, handled by the multisig wallet, enables swift action 
 
 ## Smart Contracts
 
-All AliceNet 2.0 smart contracts are deployed on the Ethereum mainnet and the Sepolia testnet. Check the [AliceNet Contract Addresses](docs/contracts.md) for more details and the `./src/smart-contracts` folder for the contract code.
+All AliceNet 2.0 smart contracts are deployed on the Ethereum mainnet and the Sepolia testnet. Check the [AliceNet Contract Addresses](docs/contracts.md) for more details and the `./smart-contracts` folder for the contract code.
 
 ---
 
