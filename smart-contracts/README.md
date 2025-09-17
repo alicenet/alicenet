@@ -1,10 +1,10 @@
 # AliceNet Smart Contracts
 
-This repository hosts the AliceNet 2.0 smart contracts, which are vital for managing the AliceNet
+This repository hosts the AliceNet 1.0 smart contracts, which are vital for managing the AliceNet
 ecosystem. These contracts facilitate a wide array of functionalities critical for the network’s
 operation.
 
->> This repository also contains a modified copy of the legacy smart contracts used by AliceNet 1.0, as some of them are still in use on the network. If you want to access the original AliceNet 1.0 smart contracts, please refer to the [AliceNet 1.0 repository](https://github.com/alicenet/alicenet/tree/main/bridge).
+>> This repository also contains a modified copy of the legacy smart contracts used by AliceNet 0.0.11, as some of them are still in use on the network. If you want to access the original AliceNet 0.0.11 smart contracts, please refer to the [AliceNet 0.0.11 repository](https://github.com/alicenet/alicenet/tree/legacy/0.0.11/bridge).
 
 >> In order to fit the AliceNet protocol needs, some of the polygon CDK smart contracts were modified. The modified contracts can be found in the [AliceNet zkevm contracts repository](https://github.com/alicenet/zkevm-contracts).
 

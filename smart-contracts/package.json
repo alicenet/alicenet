@@ -1,7 +1,7 @@
 {
   "name": "alicenet-contracts",
   "version": "1.0.0",
-  "description": "AliceNet 2.0 Smart Contracts",
+  "description": "AliceNet 1.0 Smart Contracts",
   "main": "dist/src/index.js",
   "typings": "dist/src/index.d.ts",
   "scripts": {

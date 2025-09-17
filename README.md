@@ -1,11 +1,16 @@
+![GitHub Repo stars](https://img.shields.io/github/stars/alicenet/alicenet?style=social)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/alicenet/alicenet)](https://github.com/alicenet/alicenet/releases)
 ![CI](https://github.com/valence-eng/alicenet-public-draft/actions/workflows/ci.yml/badge.svg?branch=main)
+[![License](https://img.shields.io/github/license/alicenet/alicenet)](./LICENSE)
 
-# AliceNet 2.0
 
-AliceNet 2.0 is a cutting-edge blockchain built using the
+# AliceNet 1.0
+Ofiicial repository for the AliceNet blockchain.
+
+AliceNet is a cutting-edge blockchain built using the
 [**Agglayer Chain Development Kit (CDK)**](https://docs.agglayer.dev/cdk/).
 Operating as a [**Validium**](https://docs.agglayer.dev/cdk/cdk-erigon/architecture/#cdk-erigon-validium) node,
-AliceNet 2.0 leverages
+AliceNet 1.0 leverages
 [**Agglayer zkEVM**](https://github.com/agglayer/agglayer-contracts)
 and a
 [**Data Availability Committee (DAC)**](https://github.com/0xPolygon/cdk-data-availability)
@@ -23,7 +28,7 @@ and join our official [Discord community](https://discord.gg/RQ3yQ5hwYz).
   on Ethereum, significantly reducing gas fees.
 - **Zero-Knowledge Proofs**: Ensures transaction integrity while maintaining trustlessness.
 - **Data Availability Committee (DAC)**: Manages off-chain transaction data and ensures data availability through authenticated hashes.
-- **Dual Token System**: AliceNet 2.0 uses two tokens:
+- **Dual Token System**: AliceNet uses two tokens:
   - **ALCA**: The governance token, which allows users to lock and earn rewards, incentivizes network participation and stability.
   - **ALCB**: The native ERC-20 token used as the gas token on Layer 2;
     it can be purchased directly on Ethereum with *ETH*.
@@ -34,27 +39,32 @@ and join our official [Discord community](https://discord.gg/RQ3yQ5hwYz).
 ### Links to In-Depth Discussions
 
 - For more details about the Agglayer CDK, visit the [Agglayer CDK Overview](https://docs.agglayer.dev/cdk/get-started/overview/).
-- The stability of AliceNet 2.0 relies on the two-token system
+- The stability of AliceNet relies on the two-token system
   of ALCA and ALCB;
   we have separate discussions on
   ALCA ([Governance Token](./docs/alca_discussion.md)) and
   ALCB ([Utility Token](./docs/alcb_discussion.md)).
-- Some projects on AliceNet 2.0 use Decentralized Identifiers,
+- Some projects on AliceNet use Decentralized Identifiers,
   Verifiable Credentials, and Verifiable Presentations.
   These are based on the [W3C DID Specification](https://www.w3.org/TR/did-core/)
   and [W3C VC Specification](https://w3c.github.io/vc-data-model/).
-  An extended discussion on DIDs, VCs, and VPs on AliceNet 2.0 may be found [here](./docs/w3c_discussion.md).
+  An extended discussion on DIDs, VCs, and VPs on AliceNet may be found [here](./docs/w3c_discussion.md).
 - The security of Verifiable Credentials and Verifiable Presentations
-  are based on BBS signatures and NIZK BBS proofs
-  (which allow for selective disclosure).
+  are based on BBS signatures and NIZK BBS proofs, 
+  which allow for selective disclosure.
   More information on BBS signatures and NIZK BBS proofs
   may be found [here](./docs/bbs_discussion.md).
 
 ---
+## Tokens
+ALCA, the governance token, is the migration of the MAD token, which may be done so through our [migration app](https://app.alice.net/) or directly with the [contract](https://etherscan.io/address/0xBb556b0eE2CBd89ed95DdEA881477723A3Aa8F8b).
+While there is no primary purchase contract for ALCA, ALCA may be swapped for on decentralized exchanges.
+
+ALCB, the utility token, may be purchased directly through the [contract](https://etherscan.io/token/0xF6299720F0482c8ff96968A667035A5dBfD571CB). One should purchase ALCB with the intent to [bridge](https://etherscan.io/address/0xF2aC62e8Ec641C327Eabf02a2BBC5Bd820c18bD4) and use on AliceNet.
 
 ## Security
 
-AliceNet 2.0 employs a robust governance structure and advanced security measures to ensure the network's reliability and integrity. Key roles and mechanisms include:
+AliceNet employs a robust governance structure and advanced security measures to ensure the network's reliability and integrity. Key roles and mechanisms include:
 
 ### Multisig Smart Contract
 
@@ -76,7 +86,7 @@ The Emergency Consul role, handled by the multisig wallet, enables swift action 
 
 ## Smart Contracts
 
-All AliceNet 2.0 smart contracts are deployed on the Ethereum mainnet and the Sepolia testnet. Check the [AliceNet Contract Addresses](docs/contracts.md) for more details and the `./smart-contracts` folder for the contract code.
+All AliceNet smart contracts are deployed on the Ethereum mainnet and the Sepolia testnet. Check the [AliceNet Contract Addresses](docs/contracts.md) for more details and the `./smart-contracts` folder for the contract code.
 
 ---
 

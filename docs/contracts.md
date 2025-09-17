@@ -1,4 +1,4 @@
-# AliceNet 2.0: Network Information
+# AliceNet 1.0: Network Information
 
 ## Testnet Information
 
