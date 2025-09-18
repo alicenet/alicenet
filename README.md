@@ -2,6 +2,8 @@
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/alicenet/alicenet)](https://github.com/alicenet/alicenet/releases)
 ![CI](https://github.com/valence-eng/alicenet-public-draft/actions/workflows/ci.yml/badge.svg?branch=main)
 [![License](https://img.shields.io/github/license/alicenet/alicenet)](./LICENSE)
+[![Discord](https://img.shields.io/badge/Discord-7289DA?logo=discord&logoColor=white)](https://discord.gg/RQ3yQ5hwYz)
+
 
 
 # AliceNet 1.0
