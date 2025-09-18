@@ -37,7 +37,7 @@ jobs:
       run:
         working-directory: ./bridge
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: actions/setup-node@v3
         with:
           node-version-file: "bridge/.nvmrc"
@@ -59,7 +59,7 @@ jobs:
       run:
         working-directory: ./bridge
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: actions/setup-node@v3
         with:
           node-version-file: "bridge/.nvmrc"
@@ -83,7 +83,7 @@ jobs:
       run:
         working-directory: ./bridge
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: actions/setup-node@v3
         with:
           node-version-file: "bridge/.nvmrc"
@@ -100,7 +100,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: actions/setup-go@v3
         with:
           go-version-file: ./go.mod
@@ -113,7 +113,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/alicenet-config
       - run: go build ./...
       - name: Set up gotestfmt
@@ -159,7 +159,7 @@ jobs:
             github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state,
           ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: actions/setup-node@v3
         with:
           node-version-file: "bridge/.nvmrc"
@@ -187,7 +187,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - run: git fetch --force --tags
